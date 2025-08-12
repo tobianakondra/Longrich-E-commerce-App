@@ -1,0 +1,33 @@
+# Dépendances
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# Environnement
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# Logs
+logs/
+*.log
+
+# Système d'exploitation
+.DS_Store
+Thumbs.db
+
+# Fichiers de build
+dist/
+build/
+
+# Fichiers temporaires
+tmp/
+temp/
+
+# Clés et certificats
+*.pem
+*.key
+*.cert 

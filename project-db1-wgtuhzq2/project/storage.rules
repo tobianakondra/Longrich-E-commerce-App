@@ -1,0 +1,16 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Fonction helper pour vérifier App Check
+    function isAppCheckValid() {
+      return request.auth.token.app_check_verified == true;
+    }
+    
+    match /{allPaths=**} {
+      // Lecture publique mais avec App Check valide
+      allow read: if isAppCheckValid();
+      // Écriture réservée aux utilisateurs authentifiés avec App Check valide
+      allow write: if request.auth != null && isAppCheckValid();
+    }
+  }
+}

@@ -1,0 +1,67 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Fonction helper pour vérifier App Check
+    function isAppCheckValid() {
+      return request.auth.token.app_check_verified == true;
+    }
+    
+    // Règles de base : authentification et App Check requis pour toute opération
+    match /{document=**} {
+      allow read, write: if false;
+    }
+    
+    // Règles pour la collection users
+    match /users/{userId} {
+      // Un utilisateur peut lire et modifier son propre document avec App Check valide
+      allow read, update: if request.auth != null && 
+                           request.auth.uid == userId && 
+                           isAppCheckValid();
+      // Permettre la création initiale du document utilisateur lors de l'inscription
+      allow create: if request.auth != null && 
+                     request.auth.uid == userId && 
+                     isAppCheckValid();
+      // Seuls les administrateurs peuvent supprimer des utilisateurs
+      allow delete: if request.auth != null && 
+                     exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' &&
+                     isAppCheckValid();
+    }
+    
+    // Règles pour la collection access_logs
+    match /access_logs/{logId} {
+      // Tout utilisateur authentifié avec App Check valide peut créer et lire les logs
+      allow read, create: if request.auth != null && isAppCheckValid();
+      // Personne ne peut modifier ou supprimer les logs
+      allow update, delete: if false;
+    }
+    
+    // Règles pour les produits
+    match /products/{productId} {
+      // Lecture publique mais avec App Check valide
+      allow read: if isAppCheckValid();
+      // Écriture réservée aux administrateurs avec App Check valide
+      allow write: if request.auth != null && 
+                    exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                    get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' &&
+                    isAppCheckValid();
+    }
+    
+    // Règles pour les commandes
+    match /orders/{orderId} {
+      // Un utilisateur peut lire ses propres commandes avec App Check valide
+      allow read: if request.auth != null && 
+                   resource.data.userId == request.auth.uid && 
+                   isAppCheckValid();
+      // Un utilisateur peut créer une commande pour lui-même avec App Check valide
+      allow create: if request.auth != null && 
+                     request.resource.data.userId == request.auth.uid && 
+                     isAppCheckValid();
+      // Seuls les administrateurs peuvent mettre à jour ou supprimer des commandes avec App Check valide
+      allow update, delete: if request.auth != null && 
+                             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' &&
+                             isAppCheckValid();
+    }
+  }
+}

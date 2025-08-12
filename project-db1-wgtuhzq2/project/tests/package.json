@@ -1,0 +1,10 @@
+{
+  "type": "commonjs",
+  "scripts": {
+    "test": "jest security --runInBand"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "@firebase/rules-unit-testing": "^3.0.1"
+  }
+}

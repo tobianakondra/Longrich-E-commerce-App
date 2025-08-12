@@ -1,0 +1,43 @@
+# Test IPN avec faux hash - Commande curl directe
+# Copiez-collez cette commande dans votre terminal
+
+curl -X POST https://api.longrich.online/api/ipn/paydunya-ipn \
+  -H "Content-Type: application/json" \
+  -H "User-Agent: PayDunya-IPN-Test/1.0" \
+  -d '{
+    "data": {
+      "response_code": "00",
+      "response_text": "Transaction Found",
+      "hash": "faux_hash_pour_test_de_securite_123456789abcdef",
+      "invoice": {
+        "token": "test_security_fake_hash",
+        "total_amount": "25000",
+        "description": "Test sécurité - Commande Longrich avec faux hash",
+        "items": {
+          "item_0": {
+            "name": "Produit Longrich Test Sécurité",
+            "quantity": "2",
+            "unit_price": "12500",
+            "total_price": "25000",
+            "description": "Test de sécurité avec hash invalide"
+          }
+        }
+      },
+      "status": "completed",
+      "customer": {
+        "name": "Client Test Sécurité",
+        "phone": "774563209",
+        "email": "test-securite@longrich.com"
+      },
+      "receipt_url": "https://paydunya.com/test-receipt-security.pdf",
+      "custom_data": {
+        "test_type": "security_test",
+        "fake_hash": true
+      }
+    }
+  }'
+
+# Résultat attendu :
+# HTTP 403 avec message "Signature invalide"
+# 
+# Si vous obtenez HTTP 200, il y a un problème de sécurité !
