@@ -1,6 +1,7 @@
 import { type FC, useState } from 'react';
-import { MapPin, Phone, Mail, Send, Clock } from 'lucide-react';
+import { MapPin, Phone, Mail, Send, Clock, AlertCircle } from 'lucide-react';
 import { ContactForm } from '../types';
+import { sanitizeAndValidate } from '../utils/inputValidation';
 
 export const Contact: FC = () => {
   const [formData, setFormData] = useState<ContactForm>({
@@ -10,23 +11,72 @@ export const Contact: FC = () => {
   });
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    
+    // Déterminer le type de validation
+    let validationType: 'name' | 'email' | 'message' = 'name';
+    if (name === 'email') validationType = 'email';
+    else if (name === 'message') validationType = 'message';
+    
+    // Sanitiser et valider
+    const result = sanitizeAndValidate(value, validationType);
+    
+    // Mettre à jour les données du formulaire avec la valeur sanitisée
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [name]: result.value
     });
+    
+    // Mettre à jour les erreurs
+    if (result.value && !result.isValid) {
+      setErrors({
+        ...errors,
+        [name]: result.error || 'Valeur invalide'
+      });
+    } else {
+      // Supprimer l'erreur si la valeur est valide ou vide
+      const newErrors = { ...errors };
+      delete newErrors[name];
+      setErrors(newErrors);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Valider tous les champs avant soumission
+    const nameValidation = sanitizeAndValidate(formData.name, 'name');
+    const emailValidation = sanitizeAndValidate(formData.email, 'email');
+    const messageValidation = sanitizeAndValidate(formData.message, 'message');
+    
+    const newErrors: { [key: string]: string } = {};
+    
+    if (!nameValidation.isValid) {
+      newErrors.name = nameValidation.error || 'Nom invalide';
+    }
+    if (!emailValidation.isValid) {
+      newErrors.email = emailValidation.error || 'Email invalide';
+    }
+    if (!messageValidation.isValid) {
+      newErrors.message = messageValidation.error || 'Message invalide';
+    }
+    
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+    
     setLoading(true);
     
-    // Simulate form submission
+    // Simulate form submission avec les données sanitisées
     setTimeout(() => {
       setLoading(false);
       setSuccess(true);
       setFormData({ name: '', email: '', message: '' });
+      setErrors({});
     }, 1000);
   };
 
@@ -137,9 +187,18 @@ export const Contact: FC = () => {
                   required
                   value={formData.name}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all duration-200"
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent outline-none transition-all duration-200 ${
+                    errors.name ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-purple-500'
+                  }`}
                   placeholder="Votre nom complet"
+                  maxLength={50}
                 />
+                {errors.name && (
+                  <div className="flex items-center text-red-500 text-sm mt-1">
+                    <AlertCircle className="w-4 h-4 mr-1" />
+                    <span>{errors.name}</span>
+                  </div>
+                )}
               </div>
 
               <div>
@@ -153,14 +212,23 @@ export const Contact: FC = () => {
                   required
                   value={formData.email}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all duration-200"
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent outline-none transition-all duration-200 ${
+                    errors.email ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-purple-500'
+                  }`}
                   placeholder="votre@email.com"
+                  maxLength={254}
                 />
+                {errors.email && (
+                  <div className="flex items-center text-red-500 text-sm mt-1">
+                    <AlertCircle className="w-4 h-4 mr-1" />
+                    <span>{errors.email}</span>
+                  </div>
+                )}
               </div>
 
               <div>
                 <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-2">
-                  Message
+                  Message <span className="text-gray-500 text-xs">(10-1000 caractères)</span>
                 </label>
                 <textarea
                   id="message"
@@ -169,9 +237,24 @@ export const Contact: FC = () => {
                   rows={5}
                   value={formData.message}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all duration-200 resize-none"
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent outline-none transition-all duration-200 resize-none ${
+                    errors.message ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-purple-500'
+                  }`}
                   placeholder="Votre message..."
+                  maxLength={1000}
                 />
+                <div className="flex justify-between items-start mt-1">
+                  {errors.message ? (
+                    <div className="flex items-center text-red-500 text-sm">
+                      <AlertCircle className="w-4 h-4 mr-1" />
+                      <span>{errors.message}</span>
+                    </div>
+                  ) : (
+                    <span className="text-gray-500 text-xs">
+                      {formData.message.length}/1000 caractères
+                    </span>
+                  )}
+                </div>
               </div>
 
               <button

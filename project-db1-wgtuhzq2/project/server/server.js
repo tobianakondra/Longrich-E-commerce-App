@@ -56,8 +56,8 @@ const twilioClient = twilio(
   process.env.TWILIO_AUTH_TOKEN
 );
 
-// Middleware de base
-app.use(express.json());
+// Middleware de base avec limite de taille
+app.use(express.json({ limit: '10kb' })); // Limiter la taille des requêtes JSON à 10KB
 app.use(cookieParser());
 
 // ========================================
@@ -669,6 +669,14 @@ app.post('/api/verify-code', csrfProtection, async (req, res) => {
   }
 });
 
+// Importer les utilitaires de validation
+import { 
+  sanitizeString, 
+  validateQuartier, 
+  validateAmount, 
+  validateDescription 
+} from './utils/validation.js';
+
 // Endpoint de checkout sécurisé
 app.post('/api/checkout', csrfProtection, async (req, res) => {
   const { phoneNumber, region, quartier, amount, description } = req.body;
@@ -678,20 +686,47 @@ app.post('/api/checkout', csrfProtection, async (req, res) => {
     return res.status(400).json({ error: 'Données de formulaire incomplètes' });
   }
 
+  // Sanitiser les entrées
+  const sanitizedQuartier = sanitizeString(quartier, 100);
+  const sanitizedDescription = description ? sanitizeString(description, 500) : '';
+
+  // Valider le quartier
+  if (!validateQuartier(sanitizedQuartier)) {
+    return res.status(400).json({ 
+      error: 'Quartier invalide. Utilisez uniquement des lettres, chiffres et caractères spéciaux basiques (2-100 caractères)' 
+    });
+  }
+
+  // Valider le montant
+  if (!validateAmount(amount)) {
+    return res.status(400).json({ 
+      error: 'Montant invalide. Le montant doit être entre 1 et 10,000,000 FCFA' 
+    });
+  }
+
+  // Valider la description si fournie
+  if (sanitizedDescription && !validateDescription(sanitizedDescription)) {
+    return res.status(400).json({ 
+      error: 'Description invalide. La description doit contenir entre 5 et 500 caractères' 
+    });
+  }
+
+  // Valider le téléphone
   if (!validatePhoneNumber(phoneNumber)) {
     return res.status(400).json({ error: 'Numéro de téléphone invalide' });
   }
 
+  // Valider la région
   if (!regions.includes(region)) {
     return res.status(400).json({ error: 'Région invalide' });
   }
 
   try {
-    console.log(`Traitement de la commande pour ${region}, montant: ${amount} FCFA`);
+    console.log(`Traitement de la commande pour ${region}, quartier: ${sanitizedQuartier}, montant: ${amount} FCFA`);
 
     const paymentUrl = await createWavePayment({
       amount,
-      description: description || `Commande Longrich - Région: ${region}`,
+      description: sanitizedDescription || `Commande Longrich - Région: ${region}`,
       customerName: `Client - ${region}`,
       customerPhone: phoneNumber,
       customerEmail: 'client@example.com'

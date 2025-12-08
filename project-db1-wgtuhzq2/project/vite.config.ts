@@ -2,7 +2,7 @@ import { defineConfig, loadEnv, ConfigEnv, UserConfig, Plugin, PluginOption } fr
 import react from '@vitejs/plugin-react';
 import JavaScriptObfuscator from 'javascript-obfuscator';
 
-// Créer un plugin d'obfuscation
+// Créer un plugin d'obfuscation optimisé
 function createObfuscatorPlugin(): Plugin {
   return {
     name: 'js-obfuscator',
@@ -14,26 +14,45 @@ function createObfuscatorPlugin(): Plugin {
         if (fileName.endsWith('.js') && !fileName.includes('vendor') && !fileName.includes('polyfill')) {
           const chunk = bundle[fileName];
           if ('code' in chunk) {
-            console.log(`Obfuscating: ${fileName}`);
-            chunk.code = JavaScriptObfuscator.obfuscate(chunk.code, {
-              compact: true,
-              controlFlowFlattening: true,
-              controlFlowFlatteningThreshold: 0.7,
-              deadCodeInjection: true,
-              debugProtection: true,
-              deadCodeInjectionThreshold: 0.4,
-              disableConsoleOutput: true,
-              identifierNamesGenerator: 'hexadecimal',
-              numbersToExpressions: true,
-              renameGlobals: false,
-              splitStrings: true,
-              stringArray: true,
-              stringArrayEncoding: ['base64'],
-              stringArrayThreshold: 0.8,
-              selfDefending: true,
-              transformObjectKeys: true,
-              unicodeEscapeSequence: true
-            }).getObfuscatedCode();
+            const fileSizeKB = chunk.code.length / 1024;
+            console.log(`Obfuscating: ${fileName} (${fileSizeKB.toFixed(2)} KB)`);
+            
+            // Utiliser des options moins agressives pour les gros fichiers
+            const isLargeFile = fileSizeKB > 500; // Plus de 500KB
+            
+            try {
+              chunk.code = JavaScriptObfuscator.obfuscate(chunk.code, {
+                compact: true,
+                // Options réduites pour les gros fichiers
+                controlFlowFlattening: !isLargeFile,
+                controlFlowFlatteningThreshold: isLargeFile ? 0.3 : 0.5,
+                deadCodeInjection: !isLargeFile,
+                deadCodeInjectionThreshold: isLargeFile ? 0.2 : 0.3,
+                debugProtection: false, // Désactivé car peut causer des problèmes
+                disableConsoleOutput: true,
+                identifierNamesGenerator: 'hexadecimal',
+                numbersToExpressions: !isLargeFile, // Désactivé pour gros fichiers
+                renameGlobals: false,
+                splitStrings: !isLargeFile,
+                splitStringsChunkLength: 5,
+                stringArray: true,
+                stringArrayEncoding: isLargeFile ? [] : ['base64'], // Pas d'encoding pour gros fichiers
+                stringArrayThreshold: isLargeFile ? 0.5 : 0.75,
+                selfDefending: false, // Désactivé car peut causer des problèmes
+                transformObjectKeys: !isLargeFile,
+                unicodeEscapeSequence: false, // Désactivé car augmente la taille
+                // Options de performance
+                target: 'browser',
+                seed: 0 // Pour des résultats reproductibles
+              }).getObfuscatedCode();
+              
+              console.log(`✓ Successfully obfuscated: ${fileName}`);
+            } catch (error) {
+              const errorMessage = error instanceof Error ? error.message : String(error);
+              console.error(`✗ Failed to obfuscate ${fileName}:`, errorMessage);
+              console.log(`  Skipping obfuscation for this file...`);
+              // Ne pas bloquer le build, continuer sans obfuscation
+            }
           }
         }
       }
@@ -49,10 +68,16 @@ export default defineConfig(({ mode }: ConfigEnv): UserConfig => {
   // Déterminer si nous sommes en mode production
   const isProd = mode === 'production';
   
+  // Vérifier si l'obfuscation est activée (peut être désactivée via variable d'environnement)
+  const enableObfuscation = env.VITE_ENABLE_OBFUSCATION !== 'false';
+  
   // Configurer les plugins
   const plugins: (Plugin | PluginOption)[] = [react()];
-  if (isProd) {
+  if (isProd && enableObfuscation) {
+    console.log('🔒 Obfuscation enabled for production build');
     plugins.push(createObfuscatorPlugin());
+  } else if (isProd) {
+    console.log('⚠️  Obfuscation disabled (set VITE_ENABLE_OBFUSCATION=true to enable)');
   }
   
   return {
@@ -63,7 +88,20 @@ export default defineConfig(({ mode }: ConfigEnv): UserConfig => {
     },
     build: {
       sourcemap: false,
-      minify: false,
+      minify: 'terser', // Activer la minification avec Terser
+      terserOptions: {
+        compress: {
+          drop_console: true, // Supprimer les console.log en production
+          drop_debugger: true,
+          pure_funcs: ['console.log', 'console.info', 'console.debug']
+        },
+        mangle: {
+          safari10: true
+        },
+        format: {
+          comments: false // Supprimer tous les commentaires
+        }
+      },
       rollupOptions: {
         output: {
           compact: true,

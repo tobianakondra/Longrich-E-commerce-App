@@ -5,6 +5,7 @@ import { ProductCategory, Product } from '../types';
 import { Search, FilterX, Loader } from 'lucide-react';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../config/firebase';
+import { sanitizeAndValidate } from '../utils/inputValidation';
 
 export const Products: FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<ProductCategory | 'all'>('all');
@@ -100,8 +101,13 @@ export const Products: FC = () => {
               type="text"
               placeholder="Rechercher un produit..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                // Sanitiser et valider la recherche
+                const result = sanitizeAndValidate(e.target.value, 'search');
+                setSearchQuery(result.value);
+              }}
               className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all duration-200"
+              maxLength={100}
             />
           </div>
         </div>

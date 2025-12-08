@@ -10,31 +10,7 @@
       "**/.*",
       "**/node_modules/**"
     ],
-    "headers": [
-      {
-        "source": "**/*.@(js|css)",
-        "headers": [
-          {
-            "key": "Content-Type",
-            "value": "text/javascript"
-          }
-        ]
-      },
-      {
-        "source": "**/*.css",
-        "headers": [
-          {
-            "key": "Content-Type",
-            "value": "text/css"
-          }
-        ]
-      }
-    ],
     "rewrites": [
-      {
-        "source": "/assets/**",
-        "destination": "/assets/**"
-      },
       {
         "source": "**",
         "destination": "/index.html"

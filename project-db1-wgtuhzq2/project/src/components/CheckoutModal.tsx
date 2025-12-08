@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { AlertCircle, Loader2, Check } from 'lucide-react';
 import { sendVerificationCode, verifyCode } from '../services/twilioService';
 import { useSmsConfig, SmsConfig } from '../hooks/useSmsConfig';
+import { sanitizeAndValidate } from '../utils/inputValidation';
 
 // URL du serveur de paiement
 const PAYMENT_SERVER_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
@@ -110,6 +111,21 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, initialS
           isVerified: false,
           error: ''
         }));
+      }
+    } else if (name === 'quartier') {
+      // Valider et sanitiser le quartier
+      const result = sanitizeAndValidate(value, 'quartier');
+      
+      setFormData({
+        ...formData,
+        [name]: result.value
+      });
+      
+      // Afficher l'erreur si invalide et non vide
+      if (result.value && !result.isValid) {
+        setError(result.error || 'Quartier invalide');
+      } else {
+        setError(null);
       }
     } else {
       setFormData({
@@ -507,7 +523,11 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, initialS
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
                 disabled={loading}
+                maxLength={100}
               />
+              <p className="text-xs text-gray-500 mt-1">
+                Lettres, chiffres et caractères spéciaux basiques uniquement (2-100 caractères)
+              </p>
             </div>
 
             <div className="bg-gray-100 p-4 rounded-md mb-4">
