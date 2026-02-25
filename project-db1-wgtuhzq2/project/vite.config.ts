@@ -16,10 +16,10 @@ function createObfuscatorPlugin(): Plugin {
           if ('code' in chunk) {
             const fileSizeKB = chunk.code.length / 1024;
             console.log(`Obfuscating: ${fileName} (${fileSizeKB.toFixed(2)} KB)`);
-            
+
             // Utiliser des options moins agressives pour les gros fichiers
             const isLargeFile = fileSizeKB > 500; // Plus de 500KB
-            
+
             try {
               chunk.code = JavaScriptObfuscator.obfuscate(chunk.code, {
                 compact: true,
@@ -29,7 +29,7 @@ function createObfuscatorPlugin(): Plugin {
                 deadCodeInjection: !isLargeFile,
                 deadCodeInjectionThreshold: isLargeFile ? 0.2 : 0.3,
                 debugProtection: false, // Désactivé car peut causer des problèmes
-                disableConsoleOutput: true,
+                disableConsoleOutput: false,
                 identifierNamesGenerator: 'hexadecimal',
                 numbersToExpressions: !isLargeFile, // Désactivé pour gros fichiers
                 renameGlobals: false,
@@ -45,7 +45,7 @@ function createObfuscatorPlugin(): Plugin {
                 target: 'browser',
                 seed: 0 // Pour des résultats reproductibles
               }).getObfuscatedCode();
-              
+
               console.log(`✓ Successfully obfuscated: ${fileName}`);
             } catch (error) {
               const errorMessage = error instanceof Error ? error.message : String(error);
@@ -64,13 +64,13 @@ function createObfuscatorPlugin(): Plugin {
 export default defineConfig(({ mode }: ConfigEnv): UserConfig => {
   // Charger les variables d'environnement basées sur le mode
   const env = loadEnv(mode, process.cwd(), '');
-  
+
   // Déterminer si nous sommes en mode production
   const isProd = mode === 'production';
-  
+
   // Vérifier si l'obfuscation est activée (peut être désactivée via variable d'environnement)
   const enableObfuscation = env.VITE_ENABLE_OBFUSCATION !== 'false';
-  
+
   // Configurer les plugins
   const plugins: (Plugin | PluginOption)[] = [react()];
   if (isProd && enableObfuscation) {
@@ -79,7 +79,7 @@ export default defineConfig(({ mode }: ConfigEnv): UserConfig => {
   } else if (isProd) {
     console.log('⚠️  Obfuscation disabled (set VITE_ENABLE_OBFUSCATION=true to enable)');
   }
-  
+
   return {
     plugins,
     define: {
@@ -91,9 +91,9 @@ export default defineConfig(({ mode }: ConfigEnv): UserConfig => {
       minify: 'terser', // Activer la minification avec Terser
       terserOptions: {
         compress: {
-          drop_console: true, // Supprimer les console.log en production
+          drop_console: false, // Réactivé pour permettre le débogage en production
           drop_debugger: true,
-          pure_funcs: ['console.log', 'console.info', 'console.debug']
+          pure_funcs: []
         },
         mangle: {
           safari10: true

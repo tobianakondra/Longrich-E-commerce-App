@@ -54,11 +54,13 @@ export const detectDebugger = (): boolean => {
 // Fonction pour protéger contre l'extraction du code source
 export const protectSource = (): void => {
   if (import.meta.env.PROD) {
-    // Désactiver le clic droit
+    // Désactiver le clic droit (DÉSACTIVÉ : réactivation du clic droit demandée)
+    /*
     document.addEventListener('contextmenu', (e) => {
       e.preventDefault();
       return false;
     });
+    */
 
     // La sélection de texte est maintenant autorisée
     // document.addEventListener('selectstart', (e) => {
@@ -66,7 +68,8 @@ export const protectSource = (): void => {
     //   return false;
     // });
 
-    // Désactiver le raccourci clavier pour les outils de développement
+    // Désactiver le raccourci clavier pour les outils de développement (DÉSACTIVÉ)
+    /*
     document.addEventListener('keydown', (e) => {
       // F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C
       if (
@@ -77,14 +80,17 @@ export const protectSource = (): void => {
         return false;
       }
     });
+    */
 
-    // Vérifier périodiquement les outils de développement
+    // Vérifier périodiquement les outils de développement (SHA-256 Check désactivé)
+    /*
     setInterval(() => {
       if (detectDevTools() || detectDebugger()) {
         // Rediriger ou afficher un message d'erreur
         window.location.href = '/';
       }
     }, 1000);
+    */
   }
 };
 

@@ -26,8 +26,8 @@ export const Privacy: FC = () => {
               <h2 className="text-xl md:text-2xl font-bold text-gray-900">Notre Engagement</h2>
             </div>
             <p className="text-gray-600 text-sm md:text-base leading-relaxed">
-              Chez Longrich, nous nous engageons à protéger et respecter votre vie privée. 
-              Cette politique de confidentialité explique comment nous collectons, utilisons et 
+              Chez Longrich, nous nous engageons à protéger et respecter votre vie privée.
+              Cette politique de confidentialité explique comment nous collectons, utilisons et
               protégeons vos informations personnelles lorsque vous utilisez notre site web et nos services.
             </p>
           </section>
@@ -80,8 +80,8 @@ export const Privacy: FC = () => {
             </div>
             <div className="space-y-4">
               <p className="text-gray-600 text-sm md:text-base leading-relaxed">
-                Nous mettons en place des mesures de sécurité appropriées pour protéger vos 
-                informations personnelles contre tout accès non autorisé, modification, 
+                Nous mettons en place des mesures de sécurité appropriées pour protéger vos
+                informations personnelles contre tout accès non autorisé, modification,
                 divulgation ou destruction.
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -118,9 +118,9 @@ export const Privacy: FC = () => {
           <section>
             <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-4">Cookies</h2>
             <p className="text-gray-600 text-sm md:text-base leading-relaxed">
-              Nous utilisons des cookies pour améliorer votre expérience de navigation. 
-              Ces cookies nous permettent de mémoriser vos préférences et d'analyser 
-              l'utilisation de notre site. Vous pouvez désactiver les cookies dans 
+              Nous utilisons des cookies pour améliorer votre expérience de navigation.
+              Ces cookies nous permettent de mémoriser vos préférences et d'analyser
+              l'utilisation de notre site. Vous pouvez désactiver les cookies dans
               les paramètres de votre navigateur.
             </p>
           </section>
@@ -134,8 +134,8 @@ export const Privacy: FC = () => {
               </p>
             </div>
             <p className="text-gray-600 text-sm md:text-base mt-4 leading-relaxed">
-              Nous pouvons partager vos informations uniquement avec nos partenaires de confiance 
-              nécessaires pour traiter vos commandes (transporteurs, processeurs de paiement) 
+              Nous pouvons partager vos informations uniquement avec nos partenaires de confiance
+              nécessaires pour traiter vos commandes (transporteurs, processeurs de paiement)
               et uniquement dans la mesure nécessaire pour fournir nos services.
             </p>
           </section>
@@ -144,14 +144,14 @@ export const Privacy: FC = () => {
           <section className="border-t pt-6 md:pt-8">
             <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-4">Nous Contacter</h2>
             <p className="text-gray-600 text-sm md:text-base leading-relaxed">
-              Si vous avez des questions concernant cette politique de confidentialité 
+              Si vous avez des questions concernant cette politique de confidentialité
               ou si vous souhaitez exercer vos droits, contactez-nous :
             </p>
             <div className="mt-4 p-4 bg-gray-50 rounded-lg">
               <p className="text-gray-800 text-sm md:text-base">
                 <strong>Email :</strong> privacy@longrich.sn<br />
                 <strong>Téléphone :</strong> +221 77 123 45 67<br />
-                <strong>Adresse :</strong> 123 Avenue de la Beauté, Ziguinchor, Sénégal
+                <strong>Adresse :</strong> Kénia, Ziguinchor, Sénégal
               </p>
             </div>
           </section>

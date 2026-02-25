@@ -1,5 +1,5 @@
 import { type FC, type MouseEvent } from 'react';
-import { ShoppingCart, Star } from 'lucide-react';
+import { ShoppingCart, Star, Package } from 'lucide-react';
 import { Product } from '../../types';
 import { useCart } from '../../contexts/CartContext';
 import { formatPrice } from '../../utils/formatters';
@@ -10,9 +10,9 @@ interface ProductCardProps {
   showAddToCart?: boolean;
 }
 
-export const ProductCard: FC<ProductCardProps> = ({ 
-  product, 
-  showAddToCart = true 
+export const ProductCard: FC<ProductCardProps> = ({
+  product,
+  showAddToCart = true
 }) => {
   const { addToCart } = useCart();
   const navigate = useNavigate();
@@ -28,7 +28,7 @@ export const ProductCard: FC<ProductCardProps> = ({
   };
 
   return (
-    <div 
+    <div
       onClick={handleClick}
       className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 flex flex-col h-full cursor-pointer"
     >
@@ -50,7 +50,7 @@ export const ProductCard: FC<ProductCardProps> = ({
           </div>
         )}
       </div>
-      
+
       <div className="p-3 md:p-4 flex flex-col flex-grow">
         <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2 text-sm md:text-base h-10 md:h-auto">
           {product.name}
@@ -58,7 +58,15 @@ export const ProductCard: FC<ProductCardProps> = ({
         <p className="text-gray-600 text-xs md:text-sm mb-3 line-clamp-2 hidden md:block">
           {product.description}
         </p>
-        
+
+        {/* Stock status */}
+        <div className="flex items-center space-x-1 mb-3">
+          <Package className={`w-3 h-3 ${product.stock > 0 ? 'text-green-500' : 'text-red-500'}`} />
+          <span className={`text-[10px] md:text-xs font-medium ${product.stock > 0 ? 'text-green-600' : 'text-red-600'}`}>
+            {product.stock > 0 ? `${product.stock} en stock` : 'Rupture de stock'}
+          </span>
+        </div>
+
         <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-2 md:space-y-0 mt-auto">
           <div className="flex items-center space-x-2">
             <span className="text-sm md:text-lg font-bold text-gray-900">
@@ -70,7 +78,7 @@ export const ProductCard: FC<ProductCardProps> = ({
               </span>
             )}
           </div>
-          
+
           {showAddToCart && (
             <button
               onClick={handleAddToCart}

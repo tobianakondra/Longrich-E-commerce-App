@@ -1,10 +1,12 @@
 import { type FC } from 'react';
 import { Link } from 'react-router-dom';
 import { ProductGrid } from '../components/Product/ProductGrid';
-import { useAdmin } from '../contexts/AdminContext';
 import { ArrowRight, Star, Gift } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { useAdmin } from '../contexts/AdminContext';
 
 export const Home: FC = () => {
+  const { currentUser } = useAuth();
   const { getFeaturedProducts, getSpecialOffers } = useAdmin();
   const featuredProducts = getFeaturedProducts();
   const specialOffers = getSpecialOffers();
@@ -48,9 +50,9 @@ export const Home: FC = () => {
                 Découvrez nos produits les plus populaires, sélectionnés avec soin pour leur qualité exceptionnelle
               </p>
             </div>
-            
+
             <ProductGrid products={featuredProducts} />
-            
+
             <div className="text-center mt-6 md:mt-8">
               <Link
                 to="/products"
@@ -78,22 +80,26 @@ export const Home: FC = () => {
                 Profitez de nos promotions exceptionnelles sur une sélection de produits
               </p>
             </div>
-            
+
             <ProductGrid products={specialOffers} />
           </section>
         )}
 
         {/* CTA Section */}
         <section className="mt-12 md:mt-20 bg-gradient-to-r from-pink-500 to-purple-600 rounded-2xl text-white p-8 md:p-12 text-center">
-          <h2 className="text-2xl md:text-3xl font-bold mb-4">Rejoignez notre espace santé</h2>
+          <h2 className="text-2xl md:text-3xl font-bold mb-4">
+            {currentUser ? `Ravi de vous revoir, ${currentUser.displayName || 'Cher utilisateur'}` : 'Rejoignez notre espace santé'}
+          </h2>
           <p className="text-pink-100 text-base md:text-lg mb-6 md:mb-8 max-w-2xl mx-auto">
-            Inscrivez-vous pour recevoir nos conseils santé exclusifs et être informé de nos dernières nouveautés
+            {currentUser
+              ? 'Accédez à votre historique de commandes et gérez vos informations personnelles en un clic.'
+              : 'Inscrivez-vous pour recevoir nos conseils santé exclusifs et être informé de nos dernières nouveautés'}
           </p>
           <Link
-            to="/register"
+            to={currentUser ? "/profile" : "/register"}
             className="inline-flex items-center space-x-2 bg-white text-purple-600 px-6 py-3 md:px-8 md:py-4 rounded-full font-semibold hover:bg-pink-50 transition-all duration-200 transform hover:scale-105"
           >
-            <span>Créer mon compte</span>
+            <span>{currentUser ? 'Accéder à mon profil' : 'Créer mon compte'}</span>
             <ArrowRight className="w-4 h-4 md:w-5 md:h-5" />
           </Link>
         </section>

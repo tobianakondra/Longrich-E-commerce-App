@@ -1,11 +1,13 @@
 import { type FC, createContext, useContext, useEffect, useState } from 'react';
-import { 
+import {
   User as FirebaseUser,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
-  updateProfile
+  updateProfile,
+  GoogleAuthProvider,
+  signInWithPopup
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
 import { auth, db } from '../config/firebase';
@@ -16,7 +18,8 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, username: string) => Promise<void>;
   logout: () => Promise<void>;
-  updateUserProfile: (data: {displayName?: string, phone?: string, address?: string}) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
+  updateUserProfile: (data: { displayName?: string, phone?: string, address?: string }) => Promise<void>;
   loading: boolean;
 }
 
@@ -38,12 +41,12 @@ export const AuthProvider: FC<{ children: React.ReactNode }> = ({ children }) =>
     try {
       // Création du compte d'authentification Firebase
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      
+
       // Mise à jour du profil avec le nom d'utilisateur
       await updateProfile(userCredential.user, {
         displayName: username
       });
-      
+
       // Création du document utilisateur dans Firestore
       await setDoc(doc(db, "users", userCredential.user.uid), {
         uid: userCredential.user.uid,
@@ -55,7 +58,7 @@ export const AuthProvider: FC<{ children: React.ReactNode }> = ({ children }) =>
         wishlist: [],
         orders: []
       });
-      
+
       console.log("Document utilisateur créé avec succès dans Firestore");
     } catch (error) {
       console.error("Erreur lors de la création du compte:", error);
@@ -71,26 +74,52 @@ export const AuthProvider: FC<{ children: React.ReactNode }> = ({ children }) =>
     await signOut(auth);
   };
 
-  const updateUserProfile = async (data: {displayName?: string, phone?: string, address?: string}) => {
+  const signInWithGoogle = async () => {
+    const provider = new GoogleAuthProvider();
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+
+      // Vérifier si c'est un nouvel utilisateur pour créer son document Firestore
+      const userDoc = await getDoc(doc(db, "users", user.uid));
+      if (!userDoc.exists()) {
+        await setDoc(doc(db, "users", user.uid), {
+          uid: user.uid,
+          email: user.email,
+          displayName: user.displayName,
+          createdAt: new Date(),
+          role: "customer",
+          cart: [],
+          wishlist: [],
+          orders: []
+        });
+      }
+    } catch (error) {
+      console.error("Erreur lors de la connexion Google:", error);
+      throw error;
+    }
+  };
+
+  const updateUserProfile = async (data: { displayName?: string, phone?: string, address?: string }) => {
     if (!currentUser) {
       throw new Error('No user is logged in');
     }
 
     try {
       const userRef = doc(db, "users", currentUser.uid);
-      
+
       // Mettre à jour le document utilisateur dans Firestore
       await updateDoc(userRef, {
         ...data
       });
-      
+
       // Mettre à jour le displayName dans Firebase Auth si fourni
       if (data.displayName && auth.currentUser) {
         await updateProfile(auth.currentUser, {
           displayName: data.displayName
         });
       }
-      
+
       // Mettre à jour l'état local
       setCurrentUser(prev => {
         if (!prev) return null;
@@ -101,7 +130,7 @@ export const AuthProvider: FC<{ children: React.ReactNode }> = ({ children }) =>
           address: data.address || prev.address
         };
       });
-      
+
       console.log("Profil utilisateur mis à jour avec succès");
     } catch (error) {
       console.error("Erreur lors de la mise à jour du profil:", error);
@@ -115,7 +144,7 @@ export const AuthProvider: FC<{ children: React.ReactNode }> = ({ children }) =>
         try {
           // Récupérer les données utilisateur depuis Firestore
           const userDoc = await getDoc(doc(db, "users", user.uid));
-          
+
           if (userDoc.exists()) {
             // Si le document existe, utiliser les données de Firestore
             const userData = userDoc.data();
@@ -142,7 +171,7 @@ export const AuthProvider: FC<{ children: React.ReactNode }> = ({ children }) =>
               wishlist: [],
               orders: []
             });
-            
+
             setCurrentUser({
               uid: user.uid,
               email: user.email,
@@ -175,6 +204,7 @@ export const AuthProvider: FC<{ children: React.ReactNode }> = ({ children }) =>
     login,
     register,
     logout,
+    signInWithGoogle,
     updateUserProfile,
     loading
   };

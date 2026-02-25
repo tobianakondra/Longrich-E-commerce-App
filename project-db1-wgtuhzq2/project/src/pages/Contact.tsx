@@ -15,21 +15,21 @@ export const Contact: FC = () => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    
+
     // Déterminer le type de validation
     let validationType: 'name' | 'email' | 'message' = 'name';
     if (name === 'email') validationType = 'email';
     else if (name === 'message') validationType = 'message';
-    
+
     // Sanitiser et valider
     const result = sanitizeAndValidate(value, validationType);
-    
+
     // Mettre à jour les données du formulaire avec la valeur sanitisée
     setFormData({
       ...formData,
       [name]: result.value
     });
-    
+
     // Mettre à jour les erreurs
     if (result.value && !result.isValid) {
       setErrors({
@@ -46,14 +46,14 @@ export const Contact: FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Valider tous les champs avant soumission
     const nameValidation = sanitizeAndValidate(formData.name, 'name');
     const emailValidation = sanitizeAndValidate(formData.email, 'email');
     const messageValidation = sanitizeAndValidate(formData.message, 'message');
-    
+
     const newErrors: { [key: string]: string } = {};
-    
+
     if (!nameValidation.isValid) {
       newErrors.name = nameValidation.error || 'Nom invalide';
     }
@@ -63,14 +63,14 @@ export const Contact: FC = () => {
     if (!messageValidation.isValid) {
       newErrors.message = messageValidation.error || 'Message invalide';
     }
-    
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
-    
+
     setLoading(true);
-    
+
     // Simulate form submission avec les données sanitisées
     setTimeout(() => {
       setLoading(false);
@@ -98,7 +98,7 @@ export const Contact: FC = () => {
           <div className="space-y-6 md:space-y-8">
             <div className="bg-white rounded-xl shadow-md p-6 md:p-8">
               <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-6">Nos informations</h2>
-              
+
               <div className="space-y-4 md:space-y-6">
                 <div className="flex items-start space-x-4">
                   <div className="bg-gradient-to-r from-pink-500 to-purple-600 p-3 rounded-lg">
@@ -106,7 +106,7 @@ export const Contact: FC = () => {
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900 mb-1">Adresse</h3>
-                    <p className="text-gray-600 text-sm md:text-base">123 Avenue de la Beauté<br />Ziguinchor, Sénégal</p>
+                    <p className="text-gray-600 text-sm md:text-base">Kénia<br />Ziguinchor, Sénégal</p>
                   </div>
                 </div>
 
@@ -168,7 +168,7 @@ export const Contact: FC = () => {
           {/* Contact Form */}
           <div className="bg-white rounded-xl shadow-md p-6 md:p-8">
             <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-6">Envoyez-nous un message</h2>
-            
+
             {success && (
               <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm mb-6">
                 Votre message a été envoyé avec succès ! Nous vous répondrons dans les plus brefs délais.
@@ -187,9 +187,8 @@ export const Contact: FC = () => {
                   required
                   value={formData.name}
                   onChange={handleChange}
-                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent outline-none transition-all duration-200 ${
-                    errors.name ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-purple-500'
-                  }`}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent outline-none transition-all duration-200 ${errors.name ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-purple-500'
+                    }`}
                   placeholder="Votre nom complet"
                   maxLength={50}
                 />
@@ -212,9 +211,8 @@ export const Contact: FC = () => {
                   required
                   value={formData.email}
                   onChange={handleChange}
-                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent outline-none transition-all duration-200 ${
-                    errors.email ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-purple-500'
-                  }`}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent outline-none transition-all duration-200 ${errors.email ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-purple-500'
+                    }`}
                   placeholder="votre@email.com"
                   maxLength={254}
                 />
@@ -237,9 +235,8 @@ export const Contact: FC = () => {
                   rows={5}
                   value={formData.message}
                   onChange={handleChange}
-                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent outline-none transition-all duration-200 resize-none ${
-                    errors.message ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-purple-500'
-                  }`}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent outline-none transition-all duration-200 resize-none ${errors.message ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-purple-500'
+                    }`}
                   placeholder="Votre message..."
                   maxLength={1000}
                 />

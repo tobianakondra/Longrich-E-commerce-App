@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { CartProvider } from './contexts/CartContext';
 import { AdminProvider } from './contexts/AdminContext';
+import { ReviewProvider } from './contexts/ReviewContext';
 import { Header } from './components/Layout/Header';
 import { Footer } from './components/Layout/Footer';
 import { BottomNav } from './components/Layout/BottomNav';
@@ -25,28 +26,30 @@ function App() {
     <AuthProvider>
       <CartProvider>
         <AdminProvider>
-          <Router>
-            <div className="min-h-screen flex flex-col">
-              <Header adminPath={SECURE_ADMIN_PATH} />
-              <main className="flex-1 pb-16 md:pb-0">
-                <Routes>
-                  <Route path="/" element={<Home />} />
-                  <Route path="/products" element={<Products />} />
-                  <Route path="/cart" element={<Cart />} />
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/register" element={<Register />} />
-                  <Route path="/contact" element={<Contact />} />
-                  <Route path="/about" element={<About />} />
-                  <Route path="/privacy" element={<Privacy />} />
-                  <Route path="/profile" element={<Profile />} />
-                  <Route path={`/${SECURE_ADMIN_PATH}`} element={<AdminDashboard />} />
-                  <Route path="/product/detail/:id" element={<ProductDetail />} />
-                </Routes>
-              </main>
-              <Footer />
-              <BottomNav />
-            </div>
-          </Router>
+          <ReviewProvider>
+            <Router>
+              <div className="min-h-screen flex flex-col">
+                <Header adminPath={SECURE_ADMIN_PATH} />
+                <main className="flex-1 pb-16 md:pb-0">
+                  <Routes>
+                    <Route path="/" element={<Home />} />
+                    <Route path="/products" element={<Products />} />
+                    <Route path="/cart" element={<Cart />} />
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/register" element={<Register />} />
+                    <Route path="/contact" element={<Contact />} />
+                    <Route path="/about" element={<About />} />
+                    <Route path="/privacy" element={<Privacy />} />
+                    <Route path="/profile" element={<Profile />} />
+                    <Route path={`/${SECURE_ADMIN_PATH}`} element={<AdminDashboard />} />
+                    <Route path="/product/detail/:id" element={<ProductDetail />} />
+                  </Routes>
+                </main>
+                <Footer />
+                <BottomNav />
+              </div>
+            </Router>
+          </ReviewProvider>
         </AdminProvider>
       </CartProvider>
     </AuthProvider>

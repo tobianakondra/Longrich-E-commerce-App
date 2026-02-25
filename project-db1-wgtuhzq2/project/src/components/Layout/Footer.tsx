@@ -29,7 +29,7 @@ export const Footer: FC = () => {
             </div>
             <span className="text-xl font-bold">Longrich</span>
           </div>
-          
+
           <div className="flex justify-between items-center">
             <p className="text-gray-300 text-sm pr-4 max-w-xs">
               Votre destination santé et bien-être.
@@ -52,17 +52,17 @@ export const Footer: FC = () => {
         <div className="md:hidden space-y-2">
           {/* Quick Links Section */}
           <div className="border-t border-gray-800 pt-3">
-            <button 
+            <button
               onClick={() => toggleSection('links')}
               className="w-full flex justify-between items-center text-left"
             >
               <h3 className="text-base font-semibold">Liens rapides</h3>
-              {expandedSection === 'links' ? 
-                <ChevronUp className="w-4 h-4 text-gray-400" /> : 
+              {expandedSection === 'links' ?
+                <ChevronUp className="w-4 h-4 text-gray-400" /> :
                 <ChevronDown className="w-4 h-4 text-gray-400" />
               }
             </button>
-            
+
             {expandedSection === 'links' && (
               <ul className="mt-2 space-y-2 text-sm pl-1">
                 <li>
@@ -91,45 +91,45 @@ export const Footer: FC = () => {
 
           {/* Categories Section */}
           <div className="border-t border-gray-800 pt-3">
-            <button 
+            <button
               onClick={() => toggleSection('categories')}
               className="w-full flex justify-between items-center text-left"
             >
               <h3 className="text-base font-semibold">Catégories</h3>
-              {expandedSection === 'categories' ? 
-                <ChevronUp className="w-4 h-4 text-gray-400" /> : 
+              {expandedSection === 'categories' ?
+                <ChevronUp className="w-4 h-4 text-gray-400" /> :
                 <ChevronDown className="w-4 h-4 text-gray-400" />
               }
             </button>
-            
+
             {expandedSection === 'categories' && (
               <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
-                <button 
-                  onClick={() => handleCategoryClick('health')} 
+                <button
+                  onClick={() => handleCategoryClick('health')}
                   className="text-left text-gray-300 hover:text-pink-400 transition-colors cursor-pointer"
                 >
                   Santé
                 </button>
-                <button 
-                  onClick={() => handleCategoryClick('body-care')} 
+                <button
+                  onClick={() => handleCategoryClick('body-care')}
                   className="text-left text-gray-300 hover:text-pink-400 transition-colors cursor-pointer"
                 >
                   Soins du corps
                 </button>
-                <button 
-                  onClick={() => handleCategoryClick('face-care')} 
+                <button
+                  onClick={() => handleCategoryClick('face-care')}
                   className="text-left text-gray-300 hover:text-pink-400 transition-colors cursor-pointer"
                 >
                   Soins du visage
                 </button>
-                <button 
-                  onClick={() => handleCategoryClick('beauty')} 
+                <button
+                  onClick={() => handleCategoryClick('beauty')}
                   className="text-left text-gray-300 hover:text-pink-400 transition-colors cursor-pointer"
                 >
                   Beauté
                 </button>
-                <button 
-                  onClick={() => handleCategoryClick('wellness')} 
+                <button
+                  onClick={() => handleCategoryClick('wellness')}
                   className="text-left text-gray-300 hover:text-pink-400 transition-colors cursor-pointer"
                 >
                   Bien-être
@@ -140,22 +140,22 @@ export const Footer: FC = () => {
 
           {/* Contact Section */}
           <div className="border-t border-gray-800 pt-3">
-            <button 
+            <button
               onClick={() => toggleSection('contact')}
               className="w-full flex justify-between items-center text-left"
             >
               <h3 className="text-base font-semibold">Contact</h3>
-              {expandedSection === 'contact' ? 
-                <ChevronUp className="w-4 h-4 text-gray-400" /> : 
+              {expandedSection === 'contact' ?
+                <ChevronUp className="w-4 h-4 text-gray-400" /> :
                 <ChevronDown className="w-4 h-4 text-gray-400" />
               }
             </button>
-            
+
             {expandedSection === 'contact' && (
               <div className="mt-2 space-y-3 text-sm">
                 <div className="flex items-center space-x-3">
                   <MapPin className="w-4 h-4 text-pink-400 flex-shrink-0" />
-                  <span className="text-gray-300">123 Avenue de la Beauté, Dakar</span>
+                  <span className="text-gray-300">Kénia, Ziguinchor</span>
                 </div>
                 <div className="flex flex-col space-y-1">
                   <div className="flex items-center space-x-3">
@@ -233,40 +233,40 @@ export const Footer: FC = () => {
             <h3 className="text-lg font-semibold">Catégories</h3>
             <ul className="space-y-2 text-sm">
               <li>
-                <button 
-                  onClick={() => handleCategoryClick('health')} 
+                <button
+                  onClick={() => handleCategoryClick('health')}
                   className="text-gray-300 hover:text-pink-400 transition-colors cursor-pointer"
                 >
                   Santé
                 </button>
               </li>
               <li>
-                <button 
-                  onClick={() => handleCategoryClick('body-care')} 
+                <button
+                  onClick={() => handleCategoryClick('body-care')}
                   className="text-gray-300 hover:text-pink-400 transition-colors cursor-pointer"
                 >
                   Soins du corps
                 </button>
               </li>
               <li>
-                <button 
-                  onClick={() => handleCategoryClick('face-care')} 
+                <button
+                  onClick={() => handleCategoryClick('face-care')}
                   className="text-gray-300 hover:text-pink-400 transition-colors cursor-pointer"
                 >
                   Soins du visage
                 </button>
               </li>
               <li>
-                <button 
-                  onClick={() => handleCategoryClick('beauty')} 
+                <button
+                  onClick={() => handleCategoryClick('beauty')}
                   className="text-gray-300 hover:text-pink-400 transition-colors cursor-pointer"
                 >
                   Beauté
                 </button>
               </li>
               <li>
-                <button 
-                  onClick={() => handleCategoryClick('wellness')} 
+                <button
+                  onClick={() => handleCategoryClick('wellness')}
                   className="text-gray-300 hover:text-pink-400 transition-colors cursor-pointer"
                 >
                   Bien-être
@@ -281,7 +281,7 @@ export const Footer: FC = () => {
             <div className="space-y-3 text-sm">
               <div className="flex items-center space-x-3">
                 <MapPin className="w-4 h-4 text-pink-400" />
-                <span className="text-gray-300">123 Avenue de la Beauté, Dakar</span>
+                <span className="text-gray-300">Kénia, Ziguinchor</span>
               </div>
               <div className="flex items-center space-x-3">
                 <Phone className="w-4 h-4 text-pink-400" />

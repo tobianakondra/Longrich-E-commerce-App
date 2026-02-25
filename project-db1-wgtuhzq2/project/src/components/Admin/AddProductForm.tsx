@@ -1,12 +1,15 @@
-import { useState, useRef, useCallback, type FC, type ChangeEvent, type DragEvent, type FormEvent } from 'react';
-import { Plus, Upload, X, Image as ImageIcon } from 'lucide-react';
+import { useState, useRef, type FC } from 'react';
+import { Plus, Upload, X } from 'lucide-react';
 import { useAdmin } from '../../contexts/AdminContext';
-import { AdminProductForm, ProductCategory } from '../../types';
+import { Product, ProductCategory } from '../../types';
 import { categories } from '../../data/products';
+
+// Type pour le formulaire d'ajout
+type AdminProductFormInput = Omit<Product, 'id'>;
 
 export const AddProductForm: FC = () => {
   const { addProduct } = useAdmin();
-  const [formData, setFormData] = useState<AdminProductForm>({
+  const [formData, setFormData] = useState<any>({
     name: '',
     price: 0,
     originalPrice: undefined,
@@ -14,7 +17,8 @@ export const AddProductForm: FC = () => {
     category: 'beauty',
     description: '',
     featured: false,
-    discount: undefined
+    discount: undefined,
+    stock: 1
   });
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -24,14 +28,15 @@ export const AddProductForm: FC = () => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
-    
+
     if (type === 'checkbox') {
       const checked = (e.target as HTMLInputElement).checked;
-      setFormData(prev => ({ ...prev, [name]: checked }));
+      setFormData((prev: any) => ({ ...prev, [name]: checked }));
     } else if (type === 'number') {
-      setFormData(prev => ({ ...prev, [name]: Number(value) || 0 }));
+      // Autoriser la valeur vide pour permettre à l'utilisateur d'effacer le champ
+      setFormData((prev: any) => ({ ...prev, [name]: value === '' ? '' : Number(value) }));
     } else {
-      setFormData(prev => ({ ...prev, [name]: value }));
+      setFormData((prev: any) => ({ ...prev, [name]: value }));
     }
   };
 
@@ -47,7 +52,7 @@ export const AddProductForm: FC = () => {
     reader.onloadend = () => {
       const base64String = reader.result as string;
       setImagePreview(base64String);
-      setFormData(prev => ({ ...prev, image: base64String }));
+      setFormData((prev: any) => ({ ...prev, image: base64String }));
     };
     reader.readAsDataURL(file);
   };
@@ -76,11 +81,10 @@ export const AddProductForm: FC = () => {
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(false);
-    
+
     const files = e.dataTransfer.files;
     if (files && files.length > 0) {
       const file = files[0];
-      // Vérifier si c'est une image
       if (file.type.startsWith('image/')) {
         encodeImageToBase64(file);
       } else {
@@ -91,7 +95,7 @@ export const AddProductForm: FC = () => {
 
   const handleRemoveImage = () => {
     setImagePreview(null);
-    setFormData(prev => ({ ...prev, image: '' }));
+    setFormData((prev: any) => ({ ...prev, image: '' }));
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -102,22 +106,31 @@ export const AddProductForm: FC = () => {
     setLoading(true);
 
     try {
-      // Vérifier si une image a été chargée
       if (!formData.image) {
         alert('Veuillez ajouter une image pour le produit.');
         setLoading(false);
         return;
       }
 
-      // Préparer les données à envoyer à Firestore
-      const preparedData: AdminProductForm = {
+      // Validation du stock : doit être un nombre entier strictement positif
+      const stockValue = Math.round(Number(formData.stock));
+      console.log('--- DBG: SUBMIT AJOUT ---');
+      console.log('Stock brut:', formData.stock);
+      console.log('Stock converti (stockValue):', stockValue);
+
+      if (isNaN(stockValue) || stockValue <= 0) {
+        alert('Le stock doit être un nombre entier strictement positif.');
+        setLoading(false);
+        return;
+      }
+
+      const preparedData = {
         ...formData,
-        // Convertir undefined en null pour Firestore
+        stock: stockValue,
         originalPrice: formData.originalPrice || null,
         discount: formData.discount || null
       };
-      
-      // Calculer le prix avec réduction si applicable
+
       if (preparedData.discount && preparedData.discount > 0) {
         const originalPrice = preparedData.originalPrice || preparedData.price;
         const discountedPrice = Math.round(originalPrice * (1 - preparedData.discount / 100));
@@ -127,8 +140,7 @@ export const AddProductForm: FC = () => {
 
       await addProduct(preparedData);
       setSuccess(true);
-      
-      // Reset form
+
       setFormData({
         name: '',
         price: 0,
@@ -137,7 +149,8 @@ export const AddProductForm: FC = () => {
         category: 'beauty',
         description: '',
         featured: false,
-        discount: undefined
+        discount: undefined,
+        stock: 1
       });
       setImagePreview(null);
       if (fileInputRef.current) {
@@ -170,7 +183,6 @@ export const AddProductForm: FC = () => {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Nom du produit */}
           <div>
             <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
               Nom du produit *
@@ -187,7 +199,6 @@ export const AddProductForm: FC = () => {
             />
           </div>
 
-          {/* Description */}
           <div>
             <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
               Description *
@@ -204,7 +215,6 @@ export const AddProductForm: FC = () => {
             />
           </div>
 
-          {/* Catégorie */}
           <div>
             <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-2">
               Catégorie *
@@ -223,7 +233,6 @@ export const AddProductForm: FC = () => {
             </select>
           </div>
 
-          {/* Prix */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-2">
@@ -237,6 +246,7 @@ export const AddProductForm: FC = () => {
                 min="0"
                 value={formData.price}
                 onChange={handleChange}
+                onWheel={(e) => e.currentTarget.blur()}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
                 placeholder="15000"
               />
@@ -253,13 +263,33 @@ export const AddProductForm: FC = () => {
                 min="0"
                 value={formData.originalPrice || ''}
                 onChange={handleChange}
+                onWheel={(e) => e.currentTarget.blur()}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
                 placeholder="18000"
               />
             </div>
           </div>
 
-          {/* Réduction */}
+          <div>
+            <label htmlFor="stock" className="block text-sm font-medium text-gray-700 mb-2">
+              Stock disponible *
+            </label>
+            <input
+              type="number"
+              id="stock"
+              name="stock"
+              required
+              min="1"
+              step="1"
+              value={formData.stock}
+              onChange={handleChange}
+              onWheel={(e) => e.currentTarget.blur()}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
+              placeholder="Ex: 50"
+            />
+            <p className="text-xs text-gray-500 mt-1">Nombre d'unités disponibles à la vente</p>
+          </div>
+
           <div>
             <label htmlFor="discount" className="block text-sm font-medium text-gray-700 mb-2">
               Réduction (%) - optionnel
@@ -272,6 +302,7 @@ export const AddProductForm: FC = () => {
               max="90"
               value={formData.discount || ''}
               onChange={handleChange}
+              onWheel={(e) => e.currentTarget.blur()}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
               placeholder="20"
             />
@@ -282,18 +313,16 @@ export const AddProductForm: FC = () => {
             )}
           </div>
 
-          {/* Zone de dépôt d'image */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Image du produit *
             </label>
-            
-            <div 
-              className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
-                isDragging 
-                  ? 'border-purple-500 bg-purple-50' 
-                  : 'border-gray-300 hover:border-gray-400'
-              }`}
+
+            <div
+              className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${isDragging
+                ? 'border-purple-500 bg-purple-50'
+                : 'border-gray-300 hover:border-gray-400'
+                }`}
               onDragEnter={handleDragEnter}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
@@ -310,14 +339,14 @@ export const AddProductForm: FC = () => {
                 </div>
               ) : (
                 <div className="relative">
-                  <img 
-                    src={imagePreview} 
-                    alt="Aperçu" 
+                  <img
+                    src={imagePreview}
+                    alt="Aperçu"
                     className="h-48 mx-auto object-contain rounded-lg"
                   />
-                  <button 
+                  <button
                     type="button"
-                    onClick={(e) => {
+                    onClick={(e: any) => {
                       e.stopPropagation();
                       handleRemoveImage();
                     }}
@@ -337,7 +366,6 @@ export const AddProductForm: FC = () => {
             </div>
           </div>
 
-          {/* Options */}
           <div className="space-y-3">
             <div className="flex items-center">
               <input
@@ -354,7 +382,6 @@ export const AddProductForm: FC = () => {
             </div>
           </div>
 
-          {/* Submit Button */}
           <button
             type="submit"
             disabled={loading}

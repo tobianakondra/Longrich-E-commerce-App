@@ -8,6 +8,18 @@ export interface Product {
   description: string;
   featured?: boolean;
   discount?: number | null;
+  stock: number;
+}
+
+export interface Review {
+  id: string;
+  productId: string;
+  productName: string;
+  userName: string;
+  rating: number;
+  comment: string;
+  createdAt: string;
+  status: 'pending' | 'approved' | 'rejected';
 }
 
 export interface CartItem extends Product {
@@ -57,4 +69,5 @@ export interface AdminProductForm {
   description: string;
   featured: boolean;
   discount?: number | null;
+  stock: number;
 }

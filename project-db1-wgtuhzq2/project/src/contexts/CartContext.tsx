@@ -1,12 +1,12 @@
 import { type FC, createContext, useContext, useEffect, useState } from 'react';
 import { CartItem, Product } from '../types';
 import { useAuth } from './AuthContext';
-import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 
 interface CartContextType {
   items: CartItem[];
-  addToCart: (product: Product, onAuthRequired: () => void) => void;
+  addToCart: (product: Product, onAuthRequired: () => void, quantity?: number) => void;
   removeFromCart: (productId: string, onAuthRequired: () => void) => void;
   updateQuantity: (productId: string, quantity: number, onAuthRequired: () => void) => void;
   clearCart: () => void;
@@ -65,7 +65,7 @@ export const CartProvider: FC<{ children: React.ReactNode }> = ({ children }) =>
     }
   };
 
-  const addToCart = async (product: Product, onAuthRequired: () => void) => {
+  const addToCart = async (product: Product, onAuthRequired: () => void, quantity: number = 1) => {
     if (!currentUser) {
       onAuthRequired();
       return;
@@ -73,11 +73,11 @@ export const CartProvider: FC<{ children: React.ReactNode }> = ({ children }) =>
 
     const newItems = [...items];
     const existingItem = newItems.find(item => item.id === product.id);
-    
+
     if (existingItem) {
-      existingItem.quantity += 1;
+      existingItem.quantity += quantity;
     } else {
-      newItems.push({ ...product, quantity: 1 });
+      newItems.push({ ...product, quantity });
     }
 
     setItems(newItems);
@@ -109,14 +109,14 @@ export const CartProvider: FC<{ children: React.ReactNode }> = ({ children }) =>
     const newItems = items.map(item =>
       item.id === productId ? { ...item, quantity } : item
     );
-    
+
     setItems(newItems);
     await saveCart(newItems);
   };
 
   const clearCart = async () => {
     if (!currentUser) return;
-    
+
     setItems([]);
     await saveCart([]);
   };
