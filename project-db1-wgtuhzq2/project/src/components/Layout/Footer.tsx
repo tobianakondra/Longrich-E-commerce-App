@@ -1,6 +1,6 @@
 import { useState, type FC } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Phone, MapPin, Facebook, Instagram, Twitter, ChevronDown, ChevronUp } from 'lucide-react';
+import { Mail, Phone, MapPin, Facebook, Instagram, Twitter, ChevronDown, ChevronUp, MessageCircle } from 'lucide-react';
 
 export const Footer: FC = () => {
   const navigate = useNavigate();
@@ -157,14 +157,15 @@ export const Footer: FC = () => {
                   <MapPin className="w-4 h-4 text-pink-400 flex-shrink-0" />
                   <span className="text-gray-300">Kénia, Ziguinchor</span>
                 </div>
-                <div className="flex flex-col space-y-1">
-                  <div className="flex items-center space-x-3">
-                    <Phone className="w-4 h-4 text-pink-400 flex-shrink-0" />
-                    <span className="text-gray-300">+221 78 956 87 21</span>
-                  </div>
-                  <div className="flex items-center pl-7">
-                    <span className="text-gray-300">+221 77 440 40 26</span>
-                  </div>
+                <div className="flex flex-col space-y-2">
+                  <a href="https://wa.me/221789568721" target="_blank" rel="noopener noreferrer" className="flex items-center space-x-3 text-gray-300 hover:text-green-500 transition-colors">
+                    <MessageCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                    <span>+221 78 956 87 21</span>
+                  </a>
+                  <a href="https://wa.me/221774404026" target="_blank" rel="noopener noreferrer" className="flex items-center space-x-3 text-gray-300 hover:text-green-500 transition-colors">
+                    <MessageCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                    <span>+221 77 440 40 26</span>
+                  </a>
                 </div>
                 <div className="flex items-center space-x-3">
                   <Mail className="w-4 h-4 text-pink-400 flex-shrink-0" />
@@ -283,10 +284,15 @@ export const Footer: FC = () => {
                 <MapPin className="w-4 h-4 text-pink-400" />
                 <span className="text-gray-300">Kénia, Ziguinchor</span>
               </div>
-              <div className="flex items-center space-x-3">
-                <Phone className="w-4 h-4 text-pink-400" />
-                <span className="text-gray-300">+221 78 956 87 21</span>
-                <span className="text-gray-300">+221 77 440 40 26</span>
+              <div className="flex flex-col space-y-2">
+                <a href="https://wa.me/221789568721" target="_blank" rel="noopener noreferrer" className="flex items-center space-x-3 text-gray-300 hover:text-green-500 transition-colors">
+                  <MessageCircle className="w-4 h-4 text-green-500" />
+                  <span>+221 78 956 87 21</span>
+                </a>
+                <a href="https://wa.me/221774404026" target="_blank" rel="noopener noreferrer" className="flex items-center space-x-3 text-gray-300 hover:text-green-500 transition-colors">
+                  <MessageCircle className="w-4 h-4 text-green-500" />
+                  <span>+221 77 440 40 26</span>
+                </a>
               </div>
               <div className="flex items-center space-x-3">
                 <Mail className="w-4 h-4 text-pink-400" />

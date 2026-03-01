@@ -6,6 +6,7 @@ import { Search, FilterX, Loader } from 'lucide-react';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { sanitizeAndValidate } from '../utils/inputValidation';
+import { useSEO } from '../hooks/useSEO';
 
 export const Products: FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<ProductCategory | 'all'>('all');
@@ -15,6 +16,12 @@ export const Products: FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  useSEO({
+    title: selectedCategory !== 'all' ? `Nos Produits - ${selectedCategory}` : 'Tous nos Produits',
+    description: 'Explorez notre gamme complète de produits Longrich pour la santé et la beauté. Savons, dentifrices, compléments alimentaires et plus encore.',
+    keywords: `Longrich, produits, santé, beauté, ${selectedCategory !== 'all' ? selectedCategory : ''}, Sénégal`,
+  });
+
   // Charger les produits depuis Firestore
   useEffect(() => {
     const fetchProducts = async () => {
@@ -22,7 +29,7 @@ export const Products: FC = () => {
         setLoading(true);
         const productsCollection = collection(db, 'products');
         const productsSnapshot = await getDocs(productsCollection);
-        
+
         if (productsSnapshot.empty) {
           setProducts([]);
         } else {
@@ -60,7 +67,7 @@ export const Products: FC = () => {
     }
 
     if (priceRange) {
-      filtered = filtered.filter(product => 
+      filtered = filtered.filter(product =>
         product.price >= priceRange[0] && product.price <= priceRange[1]
       );
     }
@@ -120,14 +127,14 @@ export const Products: FC = () => {
             onPriceRangeSelect={handlePriceRangeSelect}
             activePriceRange={priceRange}
           />
-          
+
           {/* Active filters display */}
           {hasActiveFilters && (
             <div className="flex flex-wrap items-center gap-2 mb-4">
               {priceRange && (
                 <div className="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-xs font-medium flex items-center">
                   <span>Prix: {priceRange[0].toLocaleString()} - {priceRange[1].toLocaleString()} FCFA</span>
-                  <button 
+                  <button
                     onClick={() => setPriceRange(null)}
                     className="ml-2 text-purple-500 hover:text-purple-700"
                   >
@@ -135,7 +142,7 @@ export const Products: FC = () => {
                   </button>
                 </div>
               )}
-              
+
               <button
                 onClick={clearFilters}
                 className="bg-gray-100 text-gray-700 hover:bg-gray-200 px-3 py-1 rounded-full text-xs font-medium flex items-center space-x-1"
@@ -168,7 +175,7 @@ export const Products: FC = () => {
 
         {/* Products Grid */}
         {!loading && !error && (
-          <ProductGrid 
+          <ProductGrid
             products={filteredProducts}
             title={`${filteredProducts.length} produit${filteredProducts.length > 1 ? 's' : ''} trouvé${filteredProducts.length > 1 ? 's' : ''}`}
           />

@@ -2,8 +2,13 @@ import { type FC, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock, UserPlus, User as UserIcon } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useSEO } from '../../hooks/useSEO';
 
 export const Register: FC = () => {
+  useSEO({
+    title: 'Créer un compte',
+    description: 'Devenez membre de la communauté Longrich et profitez de nos conseils santé exclusifs.',
+  });
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');

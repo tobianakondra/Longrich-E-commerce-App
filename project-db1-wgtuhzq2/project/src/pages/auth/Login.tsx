@@ -2,8 +2,13 @@ import { type FC, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock, LogIn } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useSEO } from '../../hooks/useSEO';
 
 export const Login: FC = () => {
+  useSEO({
+    title: 'Connexion',
+    description: 'Connectez-vous à votre compte Longrich pour gérer vos commandes et accéder à votre espace bien-être.',
+  });
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);

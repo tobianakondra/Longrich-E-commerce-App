@@ -1,7 +1,12 @@
 import { type FC } from 'react';
 import { Shield, Eye, Lock, UserCheck } from 'lucide-react';
+import { useSEO } from '../hooks/useSEO';
 
 export const Privacy: FC = () => {
+  useSEO({
+    title: 'Politique de Confidentialité',
+    description: 'Chez Longrich, nous nous engageons à protéger et respecter votre vie privée. Découvrez comment nous gérons vos données personnelles.',
+  });
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
@@ -150,7 +155,7 @@ export const Privacy: FC = () => {
             <div className="mt-4 p-4 bg-gray-50 rounded-lg">
               <p className="text-gray-800 text-sm md:text-base">
                 <strong>Email :</strong> privacy@longrich.sn<br />
-                <strong>Téléphone :</strong> +221 77 123 45 67<br />
+                <strong>Téléphone :</strong> +221 77 956 87 21<br />
                 <strong>Adresse :</strong> Kénia, Ziguinchor, Sénégal
               </p>
             </div>

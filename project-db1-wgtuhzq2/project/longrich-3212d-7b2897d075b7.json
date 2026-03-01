@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "longrich-3212d",
+  "private_key_id": "7b2897d075b72de6e8962cf1bec997dbebaf4648",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCiKYHxw1w+bgiO\nF/WEjIqjzrd0bLvrCyjMQC/Ka4JWYva9gsApSpOP83+AQATpTwv20A9ZBXVllCQD\nke+tZj5a/BIk0nYg/YNjZ0PtO8cTSRWebSuqliHbB+GonC5XkkHRi1gSFgeyop6X\n6LqoDOlislgiUTjtZDyxO2tBsnn4a9Qn01qKXXTMHXHPFu9UyxiDa+YhZdj3nL1S\n9eXI7Xw8vFccCKNHlzku4GN3SaTA4Toke793fvdK5LDGLlig6FgsIgrfy4MKn0Lk\nndmVEU0rX3VwaO0qoc3t3GeH+rq8aUm+/Eg7Z23iA8/xvMNL8O6ErQ2GJMgWqZMX\nwYoJkltxAgMBAAECggEAL2LvvQU4nGmtCFDKBwzGqq2KgHQRydJ9/om3LXCTKslK\njwB5RNetHUCrfn+2r7LQrTQJeBsXPjK2/3AS2Nnq2M2WQ7pYmLVcQpz3hYiVWPZf\nYedG/ldW11mLQKk7BY4Qu7n7Z3WWlEXfEEcK3HbBcHzrMkQH3Z8P+T6CzjToXYY1\n5TIkcG8HBtyHhTf1Hl4zgtXm4Va/HR9tZVgTXEJxqqO3Sc93vGrS7n3J88e88ZBI\nLZ2WwOuEn3K5QVdGYDQDe5UZp+iVnWoqRpSTajW7B/naIWYArOEaKChG/SD/bMLl\ns5Ibkxudwp+qhVbrKKrCJ/irOz4AXLM4IwBXu59fzQKBgQDPONF/OCLrPEcXgZMt\n0pNVxVxqfIsV8dqluQiPNgjxvc+wxK+aNrHIKHXopEepFbKx59SRDtIYF7POnEfg\nbfPQCyrRy5m5Krke9Z496vuAX/MtKs4ywTd0CyZcHQwdR6KvCvST2mdWaJc1xSdg\nw53uGUezdbyZ3/PFyhoxpB0DUwKBgQDIVWNWR9lqq9JB1/67XmAa9CcshNFYVrDa\nyE5L1dN/nROF9U0CwhMFFCXmGpFds5Y9g6aTJw0ERLKa6hBJZKndie631DOIX8Zi\nKZcI2kJuQCYrKuhnygZji/ownSddqBNk5Jwl7rgwoO7Fw+yFR7GXkaEPvgUvvdjo\nNYTfy7DxqwKBgDBnCSg6KI3hyolHDuXJJfkG3ItTA/ngQD4tdj5dVMGCoJydlJbk\n56nlKYVpugNYuiCsEg6/83sFLk64WmGlzSlvMlVGxWVnAU6l+Ixl8tENmHOYaAma\n8CT+5brmXgoIzYstd+uBPFoGnCtHHeeQSbdv2Dum6KLYmMw+ZNfriYtZAoGAdEyN\n1KL1ZuXEtBDOgruxEzS2ITQhzCTXmss6GPBTTfxEPzo+sOE15Xbi4Yh+52TATYnG\nBBthhR7UiPZk6haUPlY6zWFVYVAofQgj9DGw6ww2nEzWippPxy6V2e8B0W8ngyTs\nOWEycJicxRaOknkichlK5TatECAocfXP45P+bu0CgYBPso3uMW6z6xmNqNMtjbHu\nhmcbVdmv6EWg9BjkyTdli4a8oEiPz3YQjXLuoKk0feBZNxz7Qax1kKeYafOMjIpo\ny5d3lpqWb9EfQLow+4aRTLngm2bEhTyzgghe5PvHlbqurEMnL7/g5NNAFhg1nhwm\ndJXBu9Emuh8dnH4CylmZfA==\n-----END PRIVATE KEY-----\n",
+  "client_email": "longrich-seo@longrich-3212d.iam.gserviceaccount.com",
+  "client_id": "102066312514625153865",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/longrich-seo%40longrich-3212d.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}

@@ -4,12 +4,19 @@ import { ProductGrid } from '../components/Product/ProductGrid';
 import { ArrowRight, Star, Gift } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useAdmin } from '../contexts/AdminContext';
+import { useSEO } from '../hooks/useSEO';
 
 export const Home: FC = () => {
   const { currentUser } = useAuth();
   const { getFeaturedProducts, getSpecialOffers } = useAdmin();
   const featuredProducts = getFeaturedProducts();
   const specialOffers = getSpecialOffers();
+
+  useSEO({
+    title: 'Accueil',
+    description: 'Boutique officielle Longrich. Produits de santé, beauté et bien-être de haute qualité. Livraison rapide partout au Sénégal.',
+    keywords: 'Longrich, cosmétiques, santé, bien-être, Ziguinchor, Sénégal, soins du corps, soins du visage',
+  });
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50">

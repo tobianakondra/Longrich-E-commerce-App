@@ -1,9 +1,15 @@
 import { type FC, useState } from 'react';
-import { MapPin, Phone, Mail, Send, Clock, AlertCircle } from 'lucide-react';
+import { MapPin, Phone, Mail, Send, Clock, AlertCircle, MessageCircle } from 'lucide-react';
+import { useSEO } from '../hooks/useSEO';
 import { ContactForm } from '../types';
 import { sanitizeAndValidate } from '../utils/inputValidation';
 
 export const Contact: FC = () => {
+  useSEO({
+    title: 'Contactez-nous',
+    description: 'Une question ? Un conseil personnalisé ? Notre équipe Longrich à Ziguinchor est à votre écoute. Contactez-nous par WhatsApp ou par email.',
+  });
+
   const [formData, setFormData] = useState<ContactForm>({
     name: '',
     email: '',
@@ -116,8 +122,26 @@ export const Contact: FC = () => {
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900 mb-1">Téléphone</h3>
-                    <p className="text-gray-600 text-sm md:text-base">+221 78 956 87 21</p>
-                    <p className="text-gray-600 text-sm md:text-base">+221 77 440 40 26</p>
+                    <div className="space-y-1">
+                      <a
+                        href="https://wa.me/221789568721"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center text-gray-600 hover:text-green-600 transition-colors text-sm md:text-base group"
+                      >
+                        <span className="group-hover:underline">+221 78 956 87 21</span>
+                        <MessageCircle className="w-3 h-3 ml-2 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </a>
+                      <a
+                        href="https://wa.me/221774404026"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center text-gray-600 hover:text-green-600 transition-colors text-sm md:text-base group"
+                      >
+                        <span className="group-hover:underline">+221 77 440 40 26</span>
+                        <MessageCircle className="w-3 h-3 ml-2 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </a>
+                    </div>
                   </div>
                 </div>
 
