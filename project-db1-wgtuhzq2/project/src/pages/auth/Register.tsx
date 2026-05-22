@@ -2,12 +2,26 @@ import { type FC, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock, UserPlus, User as UserIcon } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { useSEO } from '../../hooks/useSEO';
+import { useSEOEnhanced } from '../../hooks/useSEOEnhanced';
 
 export const Register: FC = () => {
-  useSEO({
+  useSEOEnhanced({
     title: 'Créer un compte',
     description: 'Devenez membre de la communauté Longrich et profitez de nos conseils santé exclusifs.',
+    keywords: 'Longrich,inscription,compte,adhesion', 
+    url: 'https://longrich.online/register',
+    canonical: 'https://longrich.online/register',
+    noindex: true,
+    nofollow: true,
+    type: 'website',
+    schema: {
+      '@context': 'https://schema.org',
+      '@type': 'WebPage',
+      name: 'Inscription',
+      description: 'Page d\'inscription sécurisée de Longrich',
+      noindex: true,
+    },
+    language: 'fr',
   });
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');

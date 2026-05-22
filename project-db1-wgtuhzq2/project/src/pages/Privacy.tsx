@@ -1,11 +1,16 @@
 import { type FC } from 'react';
 import { Shield, Eye, Lock, UserCheck } from 'lucide-react';
-import { useSEO } from '../hooks/useSEO';
+import { useSEOEnhanced } from '../hooks/useSEOEnhanced';
 
 export const Privacy: FC = () => {
-  useSEO({
-    title: 'Politique de Confidentialité',
-    description: 'Chez Longrich, nous nous engageons à protéger et respecter votre vie privée. Découvrez comment nous gérons vos données personnelles.',
+  useSEOEnhanced({
+    title: 'Politique de Confidentialit\u00E9',
+    description: 'Chez Longrich, nous nous engageons \u00E0 prot\u00E9ger et respecter votre vie priv\u00E9e. D\u00E9couvrez comment nous g\u00E9rons vos donn\u00E9es personnelles.',
+    keywords: 'Longrich,confidentialit\u00E9,donn\u00E9es personnelles,politique,protection,S\u00E9n\u00E9gal',
+    type: 'website',
+    url: 'https://longrich.online/privacy',
+    canonical: 'https://longrich.online/privacy',
+    language: 'fr',
   });
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50">

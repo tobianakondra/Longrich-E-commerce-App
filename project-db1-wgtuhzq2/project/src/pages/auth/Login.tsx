@@ -2,12 +2,26 @@ import { type FC, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock, LogIn } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { useSEO } from '../../hooks/useSEO';
+import { useSEOEnhanced } from '../../hooks/useSEOEnhanced';
 
 export const Login: FC = () => {
-  useSEO({
+  useSEOEnhanced({
     title: 'Connexion',
     description: 'Connectez-vous à votre compte Longrich pour gérer vos commandes et accéder à votre espace bien-être.',
+    keywords: 'Longrich,connexion,compte,login',
+    url: 'https://longrich.online/login',
+    canonical: 'https://longrich.online/login',
+    noindex: true,
+    nofollow: true,
+    type: 'website',
+    schema: {
+      '@context': 'https://schema.org',
+      '@type': 'WebPage',
+      name: 'Connexion',
+      description: 'Page de connexion sécurisée de Longrich',
+      noindex: true,
+    },
+    language: 'fr',
   });
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

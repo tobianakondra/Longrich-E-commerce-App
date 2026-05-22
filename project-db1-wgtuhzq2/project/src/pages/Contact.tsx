@@ -1,13 +1,55 @@
 import { type FC, useState } from 'react';
 import { MapPin, Phone, Mail, Send, Clock, AlertCircle, MessageCircle } from 'lucide-react';
-import { useSEO } from '../hooks/useSEO';
+import { useSEOEnhanced } from '../hooks/useSEOEnhanced';
 import { ContactForm } from '../types';
 import { sanitizeAndValidate } from '../utils/inputValidation';
+import { generateLocalBusinessSchema, generateContactPageSchema, generateFAQSchema } from '../utils/schemaHelpers';
 
 export const Contact: FC = () => {
-  useSEO({
+  // Données structurées Schema.org pour la page de contact
+  const localBusinessSchema = generateLocalBusinessSchema({
+    name: 'Longrich Ziguinchor',
+    url: 'https://longrich.online',
+    telephone: '+221 78 956 87 21',
+    email: 'contact@longrich.sn',
+    address: {
+      streetAddress: 'Kénia',
+      addressLocality: 'Ziguinchor',
+      addressRegion: 'Ziguinchor',
+      addressCountry: 'SN',
+    },
+    openingHours: [
+      'Mo-Fr 09:00-18:00',
+      'Sa 09:00-17:00',
+    ],
+  });
+
+  const contactPageSchema = generateContactPageSchema();
+
+  const faqSchema = generateFAQSchema([
+    {
+      question: 'Où se trouve votre boutique Longrich ?',
+      acceptedAnswer: 'Notre boutique est située au quartier Kénia, à Ziguinchor, au Sénégal.',
+    },
+    {
+      question: 'Quels sont vos horaires d\'ouverture ?',
+      acceptedAnswer: 'Nous sommes ouverts du lundi au vendredi de 9h00 à 18h00, et le samedi de 9h00 à 17h00.',
+    },
+    {
+      question: 'Comment passer commande ?',
+      acceptedAnswer: 'Vous pouvez passer commande directement sur notre site web. Ajoutez les produits à votre panier, créez un compte ou connectez-vous, puis finalisez votre paiement via Wave.',
+    },
+  ]);
+
+  useSEOEnhanced({
     title: 'Contactez-nous',
     description: 'Une question ? Un conseil personnalisé ? Notre équipe Longrich à Ziguinchor est à votre écoute. Contactez-nous par WhatsApp ou par email.',
+    keywords: 'Longrich,Contact,Ziguinchor,Sénégal,WhatsApp,Produits beauté',
+    url: 'https://longrich.online/contact',
+    canonical: 'https://longrich.online/contact',
+    type: 'website',
+    schema: [localBusinessSchema, contactPageSchema, faqSchema],
+    language: 'fr',
   });
 
   const [formData, setFormData] = useState<ContactForm>({

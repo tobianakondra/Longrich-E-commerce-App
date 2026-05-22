@@ -6,7 +6,8 @@ import { Search, FilterX, Loader } from 'lucide-react';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { sanitizeAndValidate } from '../utils/inputValidation';
-import { useSEO } from '../hooks/useSEO';
+import { useSEOEnhanced } from '../hooks/useSEOEnhanced';
+import { generateProductSchema } from '../utils/schemaHelpers';
 
 export const Products: FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<ProductCategory | 'all'>('all');
@@ -16,10 +17,40 @@ export const Products: FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useSEO({
-    title: selectedCategory !== 'all' ? `Nos Produits - ${selectedCategory}` : 'Tous nos Produits',
+  // Schema pour le catalogue de produits
+  const catalogSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: titleTemplate,
+    description: 'Explorez notre gamme complète de produits Longrich pour la santé et la beauté.',
+    url: 'https://longrich.online/products',
+    mainEntity: {
+      '@type': 'ItemList',
+      itemListElement: products.slice(0, 10).map((product, index) => ({
+        '@type': 'ListItem',
+        position: index + 1,
+        url: `https://longrich.online/product/detail/${product.id}`,
+        name: product.name,
+      })),
+    },
+    breadcrumb: {
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, item: { '@id': 'https://longrich.online/', name: 'Accueil' } },
+        { '@type': 'ListItem', position: 2, item: { '@id': 'https://longrich.online/products', name: 'Produits' } },
+      ],
+    },
+  };
+
+  useSEOEnhanced({
+    title: titleTemplate,
     description: 'Explorez notre gamme complète de produits Longrich pour la santé et la beauté. Savons, dentifrices, compléments alimentaires et plus encore.',
-    keywords: `Longrich, produits, santé, beauté, ${selectedCategory !== 'all' ? selectedCategory : ''}, Sénégal`,
+    keywords: `Longrich,produits,santé,beauté,Sénégal,${selectedCategory !== 'all' ? selectedCategory : 'tous les produits'}`,
+    url: `https://longrich.online/products${selectedCategory !== 'all' ? '?category=' + selectedCategory : ''}`,
+    canonical: 'https://longrich.online/products',
+    type: 'website',
+    schema: catalogSchema,
+    language: 'fr',
   });
 
   // Charger les produits depuis Firestore

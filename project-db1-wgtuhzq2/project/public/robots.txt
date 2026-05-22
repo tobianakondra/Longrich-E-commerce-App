@@ -1,0 +1,18 @@
+# Bloquer l'accès aux pages techniques
+User-agent: *
+
+# Autoriser tout le site par défaut
+Allow: /
+
+# Bloquer les pages d'authentification et d'administration (pas utiles pour le SEO)
+Disallow: /login
+Disallow: /register
+Disallow: /profile
+Disallow: /cart
+Disallow: /product/detail/
+
+# Bloquer les pages d'administration sécurisées
+Disallow: /dashboard-management-secure-x29a7b
+
+# Indiquer l'emplacement du sitemap
+Sitemap: https://longrich.online/sitemap.xml

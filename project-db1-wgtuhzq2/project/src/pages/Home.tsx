@@ -4,7 +4,9 @@ import { ProductGrid } from '../components/Product/ProductGrid';
 import { ArrowRight, Star, Gift } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useAdmin } from '../contexts/AdminContext';
-import { useSEO } from '../hooks/useSEO';
+// import { useSEO } from '../hooks/useSEO';
+import { useSEOEnhanced } from '../hooks/useSEOEnhanced';
+import { generateWebSiteSchema, generateOrganizationSchema, generateLocalBusinessSchema } from '../utils/schemaHelpers';
 
 export const Home: FC = () => {
   const { currentUser } = useAuth();
@@ -12,10 +14,54 @@ export const Home: FC = () => {
   const featuredProducts = getFeaturedProducts();
   const specialOffers = getSpecialOffers();
 
-  useSEO({
+  // Données structurées Schema.org pour la page d'accueil
+  const webSiteSchema = generateWebSiteSchema(
+    'https://longrich.online',
+    'https://longrich.online/products?search={search_term_string}'
+  );
+
+  const organizationSchema = generateOrganizationSchema({
+    name: 'Longrich',
+    url: 'https://longrich.online',
+    logo: 'https://longrich.online/logo.png',
+    description: 'Boutique officielle Longrich. Produits de santé, beauté et bien-être de haute qualité au Sénégal.',
+    telephone: '+221 78 956 87 21',
+    email: 'contact@longrich.sn',
+    address: {
+      streetAddress: 'Kénia',
+      addressLocality: 'Ziguinchor',
+      addressRegion: 'Ziguinchor',
+      addressCountry: 'SN',
+    },
+    sameAs: [],
+  });
+
+  const localBusinessSchema = generateLocalBusinessSchema({
+    name: 'Longrich Ziguinchor',
+    url: 'https://longrich.online',
+    telephone: '+221 78 956 87 21',
+    email: 'contact@longrich.sn',
+    address: {
+      streetAddress: 'Kénia',
+      addressLocality: 'Ziguinchor',
+      addressRegion: 'Ziguinchor',
+      addressCountry: 'SN',
+    },
+    priceRange: '$$',
+  });
+
+  // Combiner les schémas pour la page d'accueil
+  const homePageSchema = [webSiteSchema, organizationSchema, localBusinessSchema];
+
+  useSEOEnhanced({
     title: 'Accueil',
     description: 'Boutique officielle Longrich. Produits de santé, beauté et bien-être de haute qualité. Livraison rapide partout au Sénégal.',
-    keywords: 'Longrich, cosmétiques, santé, bien-être, Ziguinchor, Sénégal, soins du corps, soins du visage',
+    keywords: 'Longrich,Produits de beauté,Soins du corps,Santé naturelle,Ziguinchor,Sénégal',
+    url: 'https://longrich.online',
+    canonical: 'https://longrich.online/',
+    type: 'website',
+    schema: homePageSchema,
+    language: 'fr',
   });
 
   return (

@@ -1,11 +1,38 @@
 import { type FC } from 'react';
 import { Heart, Award, Users, Sparkles } from 'lucide-react';
-import { useSEO } from '../hooks/useSEO';
+import { useSEOEnhanced } from '../hooks/useSEOEnhanced';
+import { generateOrganizationSchema, generateFAQSchema } from '../utils/schemaHelpers';
 
 export const About: FC = () => {
-  useSEO({
-    title: 'À Propos de Nous',
+  const orgSchema = generateOrganizationSchema({
+    name: 'Longrich',
+    url: 'https://longrich.online',
+    logo: 'https://longrich.online/logo.png',
+    description: 'Boutique officielle Longrich au Sénégal. Produits de santé et bien-être.',
+    telephone: '+221 78 956 87 21',
+    email: 'contact@longrich.sn',
+  });
+
+  const aboutFAQ = generateFAQSchema([
+    {
+      question: 'Qu\'est-ce que Longrich ?',
+      acceptedAnswer: 'Longrich est une boutique en ligne de produits de beauté et de bien-être basée à Ziguinchor, au Sénégal.',
+    },
+    {
+      question: 'Où se trouve votre boutique ?',
+      acceptedAnswer: 'Notre boutique est située au quartier Kénia, à Ziguinchor, au Sénégal.',
+    },
+  ]);
+
+  useSEOEnhanced({
+    title: '\u00C0 Propos de Nous',
     description: 'Découvrez l\'histoire de Longrich, notre mission pour la santé et le bien-être au Sénégal, et nos valeurs de qualité et d\'innovation.',
+    keywords: 'Longrich,\u00E0 propos,S\u00E9n\u00E9gal,Ziguinchor,sant\u00E9,bien-\u00Eatre',
+    url: 'https://longrich.online/about',
+    canonical: 'https://longrich.online/about',
+    type: 'website',
+    schema: [orgSchema, aboutFAQ],
+    language: 'fr',
   });
   const values = [
     {

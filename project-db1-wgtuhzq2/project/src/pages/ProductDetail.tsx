@@ -24,7 +24,8 @@ import { useReviews } from '../contexts/ReviewContext';
 import { useAuth } from '../contexts/AuthContext';
 import { ProductCard } from '../components/Product/ProductCard';
 import { formatPrice } from '../utils/formatters';
-import { useSEO } from '../hooks/useSEO';
+import { useSEOEnhanced } from '../hooks/useSEOEnhanced';
+import { generateProductSchema } from '../utils/schemaHelpers';
 
 export const ProductDetail: FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -47,11 +48,29 @@ export const ProductDetail: FC = () => {
 
   const product = useMemo(() => products.find(p => p.id === id), [products, id]);
 
-  useSEO({
-    title: product?.name,
-    description: product?.description,
+  const productSchema = product ? generateProductSchema({
+    name: product.name,
+    description: product.description,
+    image: product.image,
+    url: `https://longrich.online/product/detail/${product.id}`,
+    brand: 'Longrich',
+    sku: product.id,
+    category: product.category,
+    price: product.price,
+    availability: product.stock > 0 ? 'InStock' : 'OutOfStock',
+    currency: 'XOF',
+  }) : null;
+
+  useSEOEnhanced({
+    title: product?.name || 'Produit',
+    description: product?.description || 'Produits Longrich',
     image: product?.image,
+    url: `https://longrich.online/product/detail/${product?.id || ''}`,
+    canonical: `https://longrich.online/product/detail/${product?.id || ''}`,
     type: 'product',
+    noindex: !product, // Ne pas indexer si le produit n'est pas trouvé
+    schema: productSchema,
+    language: 'fr',
   });
 
   // Ajouter des données structurées JSON-LD
