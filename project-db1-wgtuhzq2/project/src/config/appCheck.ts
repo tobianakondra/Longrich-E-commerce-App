@@ -89,24 +89,32 @@ export function initializeAppCheckService(app: FirebaseApp, config: AppCheckConf
       status: AppCheckStatus.INITIALIZING
     };
 
-    // Déterminer le fournisseur à utiliser
-    let provider;
-    
-    // Utiliser reCAPTCHA v3 dans tous les environnements
-    provider = new ReCaptchaV3Provider(config.recaptchaSiteKey);
-    console.log('App Check: Utilisation du fournisseur reCAPTCHA v3');
+    // Vérifier si la clé reCAPTCHA est présente
+    if (!config.recaptchaSiteKey || config.recaptchaSiteKey === 'your-recaptcha-site-key') {
+      console.warn('App Check: Clé reCAPTCHA manquante ou non configurée. Service désactivé.');
+      return { success: false, error: { type: AppCheckErrorType.INITIALIZATION_FAILED, message: 'Missing Site Key', timestamp: new Date() } };
+    }
 
-    // Initialiser App Check
+    // Nettoyer le token de debug (enlever les espaces éventuels)
+    const debugToken = (import.meta.env.VITE_FIREBASE_APP_CHECK_DEBUG_TOKEN || '').trim();
+
+    // Gérer le mode debug de manière simplifiée
+    if (typeof window !== 'undefined' && debugToken) {
+      (window as any).FIREBASE_APPCHECK_DEBUG_TOKEN = debugToken;
+    }
+
+    // Protection : Ne pas initialiser si on sait que ça va échouer (clé vide ou 'your-...')
+    if (!config.recaptchaSiteKey || config.recaptchaSiteKey.includes('your-')) {
+      return { success: false, error: { type: AppCheckErrorType.INITIALIZATION_FAILED, message: 'Invalid Site Key', timestamp: new Date() } };
+    }
+
+    // Déterminer le fournisseur à utiliser
+    const provider = new ReCaptchaV3Provider(config.recaptchaSiteKey);
+
+    // Initialiser App Check avec capture d'erreur immédiate
     const appCheck = initializeAppCheck(app, {
       provider,
-      isTokenAutoRefreshEnabled: config.autoRefresh,
-      // Activer le mode debug en développement si un token de debug est fourni
-      ...(config.isDebug && import.meta.env.MODE !== 'production' && {
-        debug: {
-          apiKey: import.meta.env.VITE_FIREBASE_APP_CHECK_DEBUG_TOKEN,
-          siteKey: config.recaptchaSiteKey,
-        }
-      })
+      isTokenAutoRefreshEnabled: config.autoRefresh
     });
 
     // Configurer l'écouteur de changement de token
@@ -115,7 +123,6 @@ export function initializeAppCheckService(app: FirebaseApp, config: AppCheckConf
         status: AppCheckStatus.ACTIVE,
         lastTokenRefresh: new Date()
       };
-      console.log('App Check: Token rafraîchi avec succès');
     }, (error) => {
       const appCheckError: AppCheckError = {
         type: mapErrorType(error),

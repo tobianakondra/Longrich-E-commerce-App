@@ -1,0 +1,20 @@
+[Unit]
+Description=Longrich E-commerce Server
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/longrich/server
+Environment=NODE_ENV=production
+Environment=PORT=4000
+ExecStart=/usr/bin/node /var/www/longrich/server/start-server.js
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=longrich-server
+
+[Install]
+WantedBy=multi-user.target

@@ -30,7 +30,7 @@ import { generateProductSchema } from '../utils/schemaHelpers';
 export const ProductDetail: FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { products } = useAdmin();
+  const { products, loading } = useAdmin();
   const { addToCart } = useCart();
   const { currentUser } = useAuth();
   const { getReviewsByProduct, addReview } = useReviews();
@@ -47,6 +47,7 @@ export const ProductDetail: FC = () => {
   const [copySuccess, setCopySuccess] = useState(false);
 
   const product = useMemo(() => products.find(p => p.id === id), [products, id]);
+  const productReviews = getReviewsByProduct(product?.id || '');
 
   const productSchema = product ? generateProductSchema({
     name: product.name,
@@ -125,6 +126,17 @@ export const ProductDetail: FC = () => {
       setReviewName(currentUser.displayName);
     }
   }, [currentUser]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="flex flex-col items-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-600"></div>
+          <p className="text-gray-500 font-medium animate-pulse">Chargement du produit...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!product) {
     return (
@@ -227,8 +239,6 @@ export const ProductDetail: FC = () => {
       }
     },
   ];
-
-  const productReviews = getReviewsByProduct(product.id);
 
   return (
     <div className="min-h-screen bg-gray-50 pt-20 pb-12">

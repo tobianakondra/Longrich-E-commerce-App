@@ -10,11 +10,11 @@ import morgan from 'morgan';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import { createWavePayment, checkPaymentStatus } from './services/paymentService.js';
+import { initiateWavePayment } from './services/senepayService.js';
 import fetch from 'node-fetch';
 import twilio from 'twilio';
 import https from 'https';
 import http from 'http';
-import { paymentAccessFix } from './middleware/paymentAccessFix.js';
 import ipnRoutes from './routes/ipn.js';
 import sseRoutes from './routes/sse.js';
 import pollingRoutes from './routes/polling.js';
@@ -24,26 +24,50 @@ import admin from 'firebase-admin';
 // Charger les variables d'environnement
 dotenv.config();
 
+// Obtenir le chemin du répertoire actuel en ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 // Configuration Firebase Admin
 if (!admin.apps.length) {
   try {
-    // Utiliser la clé de service depuis les variables d'environnement
-    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY || '{}');
+    let serviceAccount;
+    const serviceAccountVar = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
     
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
-      projectId: process.env.FIREBASE_PROJECT_ID
-    });
-    
-    console.log('✅ Firebase Admin initialisé avec succès');
+    if (serviceAccountVar && serviceAccountVar.startsWith('{')) {
+      // C'est une chaîne JSON (potentiellement coupée par dotenv si sur plusieurs lignes sans quotes)
+      try {
+        serviceAccount = JSON.parse(serviceAccountVar);
+      } catch (e) {
+        // Fallback: essayer de trouver le fichier physique si le JSON est malformé dans l'env
+        const serviceAccountPath = path.join(__dirname, 'longrich-3212d-7b2897d075b7.json');
+        if (fs.existsSync(serviceAccountPath)) {
+          serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
+        } else {
+          throw new Error('La variable FIREBASE_SERVICE_ACCOUNT_KEY est malformée et aucun fichier JSON n\'a été trouvé.');
+        }
+      }
+    } else {
+      // Essayer de charger le fichier JSON physique par défaut
+      const serviceAccountPath = path.join(__dirname, 'longrich-3212d-7b2897d075b7.json');
+      if (fs.existsSync(serviceAccountPath)) {
+        serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
+      }
+    }
+
+    if (serviceAccount) {
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+        projectId: process.env.FIREBASE_PROJECT_ID || serviceAccount.project_id
+      });
+      console.log('✅ Firebase Admin initialisé avec succès');
+    } else {
+      console.warn('⚠️ Attention: Firebase Admin n\'a pas pu être initialisé (clé manquante)');
+    }
   } catch (error) {
     console.error('❌ Erreur initialisation Firebase Admin:', error);
   }
 }
-
-// Obtenir le chemin du répertoire actuel en ES modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 // Configuration
 const app = express();
@@ -105,33 +129,6 @@ app.get('/payment-ipn-test', (req, res) => {
     timestamp: new Date().toISOString(),
     path: req.path
   });
-});
-
-// Appliquer le middleware de contournement pour les paiements AVANT tout autre middleware
-app.use(paymentAccessFix);
-
-// Middleware spécial pour les requêtes de paiement et IPN - BYPASS COMPLET
-app.use((req, res, next) => {
-  // Vérifier si c'est une requête de paiement, IPN ou SSE
-  if (req.path.startsWith('/payment-proxy/') ||
-    req.path.startsWith('/payment-content/') ||
-    req.path.startsWith('/payment-success/') ||
-    req.path.startsWith('/payment-ipn') ||
-    req.path.startsWith('/api/ipn/') ||
-    req.path.startsWith('/api/sse/') ||
-    req.path === '/payment-error') {
-    console.log(`[BYPASS COMPLET] Requête de paiement/IPN détectée: ${req.path}`);
-    console.log(`[BYPASS COMPLET] Headers originaux: Origin=${req.headers.origin}, Referer=${req.headers.referer}`);
-
-    // BYPASS COMPLET - passer directement au handler de route
-    // Marquer la requête comme autorisée
-    req.paymentBypass = true;
-
-    return next();
-  }
-
-  // Pour les autres requêtes, continuer normalement
-  next();
 });
 
 // Middleware pour vérifier les en-têtes Referer et Origin
@@ -270,11 +267,12 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'", "https://*.wave.com", "https://*.cloudflareinsights.com"],
-      connectSrc: ["'self'", "https://longrich.online", "https://longrich-3212d.web.app", "https://longrich-3212d.firebaseapp.com", "https://pay.wave.com", "https://app.paydunya.com", "https://*.cloudflareinsights.com", "https://*.wave.com"],
+      connectSrc: ["'self'", "https://longrich.online", "https://longrich-3212d.web.app", "https://longrich-3212d.firebaseapp.com", "https://pay.wave.com", "https://app.paydunya.com", "https://*.cloudflareinsights.com", "https://*.wave.com", "https://*.googleapis.com", "https://*.firebaseapp.com"],
       imgSrc: ["'self'", "data:", "https:", "http:", "https://*.wave.com", "https://pay.wave.com"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "https://*.cloudflareinsights.com", "https://static.cloudflareinsights.com", "https://*.wave.com"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://*.wave.com"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://*.cloudflareinsights.com", "https://static.cloudflareinsights.com", "https://*.wave.com", "https://www.google.com/recaptcha/", "https://www.gstatic.com/recaptcha/"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://*.wave.com", "https://www.gstatic.com/recaptcha/"],
       fontSrc: ["'self'", "data:", "https://*.wave.com"],
+      frameSrc: ["'self'", "https://www.google.com/recaptcha/", "https://recaptcha.google.com/recaptcha/"],
       objectSrc: ["'none'"],
       upgradeInsecureRequests: []
     }
@@ -308,9 +306,6 @@ app.use(session({
 
 // Stockage des tokens CSRF
 const csrfTokens = new Map();
-
-// Stockage des paiements en cours
-const pendingPayments = new Map();
 
 // Rate limiting pour l'endpoint SMS config
 const smsConfigRateLimitMap = new Map();
@@ -722,53 +717,25 @@ app.post('/api/checkout', csrfProtection, async (req, res) => {
   }
 
   try {
-    console.log(`Traitement de la commande pour ${region}, quartier: ${sanitizedQuartier}, montant: ${amount} FCFA`);
+    console.log(`[SenePay] Traitement de la commande pour ${region}, quartier: ${sanitizedQuartier}, montant: ${amount} FCFA`);
 
-    const paymentUrl = await createWavePayment({
+    // Utilisation de SenePay API Direct pour Wave
+    const senepayResult = await initiateWavePayment({
       amount,
       description: sanitizedDescription || `Commande Longrich - Région: ${region}`,
       customerName: `Client - ${region}`,
       customerPhone: phoneNumber,
-      customerEmail: 'client@example.com'
-    });
-
-    console.log(`URL de paiement générée: ${paymentUrl}`);
-
-    // Générer un ID de paiement unique
-    const paymentId = uuidv4();
-
-    // Stocker les informations de paiement
-    pendingPayments.set(paymentId, {
-      originalUrl: paymentUrl,
-      amount,
-      description: description || `Commande Longrich - Région: ${region}`,
-      region,
-      phoneNumber,
-      createdAt: new Date().toISOString()
-    });
-
-    // Définir une expiration après 30 minutes
-    setTimeout(() => {
-      if (pendingPayments.has(paymentId)) {
-        pendingPayments.delete(paymentId);
-        console.log(`Paiement ${paymentId} expiré et supprimé`);
+      metadata: {
+        region,
+        quartier: sanitizedQuartier
       }
-    }, 30 * 60 * 1000);
+    });
 
-    // Détecter si l'utilisateur est sur mobile ou desktop
-    const userAgent = req.headers['user-agent'] || '';
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+    const paymentUrl = senepayResult.redirectUrl;
+    console.log(`[SenePay] URL de paiement Wave générée: ${paymentUrl}`);
 
-    console.log(`[CHECKOUT] User-Agent: ${userAgent}`);
-    console.log(`[CHECKOUT] Détecté comme: ${isMobile ? 'Mobile' : 'Desktop'}`);
-
-    // Stocker l'information dans les données de paiement
-    pendingPayments.get(paymentId).isMobile = isMobile;
-    pendingPayments.get(paymentId).userAgent = userAgent;
-
-    // Renvoyer l'URL du proxy au lieu de l'URL Wave directe
-    const proxyUrl = `${req.protocol}://${req.get('host')}/payment-proxy/${paymentId}?source=checkout&device=${isMobile ? 'mobile' : 'desktop'}`;
-    res.json({ paymentUrl: proxyUrl });
+    // Renvoyer l'URL Wave directe au frontend
+    res.json({ paymentUrl });
   } catch (error) {
     console.error(`[${new Date().toISOString()}] Erreur détaillée lors du traitement du paiement:`, error);
 
@@ -1857,7 +1824,7 @@ app.get('/security-violation', (req, res) => {
   `);
 });
 
-// Servir les fichiers statiques
+// Servir les fichiers statiques (fichiers publics du serveur de paiement)
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Middleware de gestion des erreurs
@@ -1866,24 +1833,31 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Erreur serveur interne' });
 });
 
-// Charger les certificats SSL
-const sslOptions = {
-  key: fs.readFileSync(path.join(__dirname, 'ssl/key.pem')),
-  cert: fs.readFileSync(path.join(__dirname, 'ssl/cert.pem'))
-};
+// Charger les certificats SSL si présents
+let httpsServer = null;
+const sslKeyPath = path.join(__dirname, 'ssl/key.pem');
+const sslCertPath = path.join(__dirname, 'ssl/cert.pem');
 
-// Créer les serveurs HTTP et HTTPS
+if (fs.existsSync(sslKeyPath) && fs.existsSync(sslCertPath)) {
+  const sslOptions = {
+    key: fs.readFileSync(sslKeyPath),
+    cert: fs.readFileSync(sslCertPath)
+  };
+  httpsServer = https.createServer(sslOptions, app);
+  
+  httpsServer.listen(PORT + 1, () => {
+    console.log(`[${new Date().toISOString()}] Serveur HTTPS démarré sur le port ${PORT + 1}`);
+  });
+} else {
+  console.warn(`[${new Date().toISOString()}] Certificats SSL manquants, serveur HTTPS non démarré.`);
+}
+
+// Créer le serveur HTTP
 const httpServer = http.createServer(app);
-const httpsServer = https.createServer(sslOptions, app);
 
-// Démarrer les serveurs
+// Démarrer le serveur HTTP
 httpServer.listen(PORT, () => {
   console.log(`[${new Date().toISOString()}] Serveur HTTP démarré sur le port ${PORT}`);
-});
-
-httpsServer.listen(PORT + 1, () => {
-  console.log(`[${new Date().toISOString()}] Serveur HTTPS démarré sur le port ${PORT + 1}`);
-  console.log(`[${new Date().toISOString()}] Accédez à votre serveur sécurisé via https://localhost:${PORT + 1}`);
 });
 
 // ========================================
@@ -1908,11 +1882,16 @@ function gracefulShutdown(signal) {
     console.log('✅ Serveur HTTP fermé');
   });
   
-  httpsServer.close(() => {
-    console.log('✅ Serveur HTTPS fermé');
+  if (httpsServer) {
+    httpsServer.close(() => {
+      console.log('✅ Serveur HTTPS fermé');
+      console.log('👋 Arrêt complet du serveur');
+      process.exit(0);
+    });
+  } else {
     console.log('👋 Arrêt complet du serveur');
     process.exit(0);
-  });
+  }
   
   // Force l'arrêt après 10 secondes
   setTimeout(() => {

@@ -17,6 +17,9 @@ export const Products: FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Titre de la page pour le SEO
+  const titleTemplate = 'Nos Produits';
+
   // Schema pour le catalogue de produits
   const catalogSchema = {
     '@context': 'https://schema.org',

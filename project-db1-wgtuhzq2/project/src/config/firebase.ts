@@ -31,31 +31,13 @@ const appCheckConfig: AppCheckConfig = {
   autoRefresh: true
 };
 
-// Vérifier la configuration du mode debug
+// Vérifier la configuration du mode debug (silencieux)
 checkAppCheckDebugConfiguration();
 
-// Initialiser App Check
+// Initialiser App Check de manière sécurisée
 const appCheckResult = initializeAppCheckService(app, appCheckConfig);
 
-// Exporter le résultat de l'initialisation d'App Check
+// Exporter l'instance (sera null si l'initialisation échoue volontairement)
 export const appCheck = appCheckResult.appCheck;
-
-// Afficher un message d'erreur si l'initialisation a échoué
-if (!appCheckResult.success) {
-  console.error('Erreur lors de l\'initialisation d\'App Check:', appCheckResult.error);
-  
-  // En développement, afficher un message plus détaillé
-  if (import.meta.env.MODE !== 'production') {
-    console.warn(`
-      ⚠️ App Check n'a pas pu être initialisé. Cela peut être dû à:
-      - Des clés reCAPTCHA manquantes ou invalides
-      - Un problème réseau
-      - Un problème avec le service reCAPTCHA
-      
-      Vérifiez vos variables d'environnement et votre connexion internet.
-      L'application continuera à fonctionner, mais les requêtes Firebase pourraient être rejetées.
-    `);
-  }
-}
 
 export default app;

@@ -17,12 +17,10 @@ export const checkSmsConfig = async (): Promise<SmsConfig> => {
     // Vérifier d'abord le cache
     const cachedConfig = getFromCache();
     if (cachedConfig) {
-      console.log('Configuration SMS récupérée depuis le cache');
       return cachedConfig;
     }
 
     // Si pas de cache valide, récupérer depuis le serveur
-    console.log('Récupération de la configuration SMS depuis le serveur');
     const response = await fetch(`${API_BASE_URL}/api/sms-config`, {
       credentials: 'include'
     });

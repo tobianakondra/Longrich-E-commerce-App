@@ -1,11 +1,8 @@
-import { useState, useRef, type FC } from 'react';
-import { Plus, Upload, X } from 'lucide-react';
+import { useState, type FC } from 'react';
+import { Plus } from 'lucide-react';
 import { useAdmin } from '../../contexts/AdminContext';
-import { Product, ProductCategory } from '../../types';
 import { categories } from '../../data/products';
-
-// Type pour le formulaire d'ajout
-type AdminProductFormInput = Omit<Product, 'id'>;
+import { ImageUploader } from './ImageUploader';
 
 export const AddProductForm: FC = () => {
   const { addProduct } = useAdmin();
@@ -22,9 +19,9 @@ export const AddProductForm: FC = () => {
   });
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
+  const UPLOADCARE_PUB_KEY = import.meta.env.VITE_UPLOADCARE_PUBLIC_KEY;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -33,72 +30,36 @@ export const AddProductForm: FC = () => {
       const checked = (e.target as HTMLInputElement).checked;
       setFormData((prev: any) => ({ ...prev, [name]: checked }));
     } else if (type === 'number') {
-      // Autoriser la valeur vide pour permettre à l'utilisateur d'effacer le champ
       setFormData((prev: any) => ({ ...prev, [name]: value === '' ? '' : Number(value) }));
     } else {
       setFormData((prev: any) => ({ ...prev, [name]: value }));
     }
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      encodeImageToBase64(file);
-    }
-  };
-
-  const encodeImageToBase64 = (file: File) => {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64String = reader.result as string;
-      setImagePreview(base64String);
-      setFormData((prev: any) => ({ ...prev, image: base64String }));
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(true);
-  };
-
-  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-  };
-
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!isDragging) {
-      setIsDragging(true);
-    }
-  };
-
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-
-    const files = e.dataTransfer.files;
-    if (files && files.length > 0) {
-      const file = files[0];
-      if (file.type.startsWith('image/')) {
-        encodeImageToBase64(file);
-      } else {
-        alert('Veuillez déposer uniquement des fichiers image.');
-      }
-    }
+  const handleFileSelect = (file: File | null) => {
+    setSelectedFile(file);
+    if (!file) setFormData((prev: any) => ({ ...prev, image: '' }));
   };
 
   const handleRemoveImage = () => {
-    setImagePreview(null);
+    setSelectedFile(null);
     setFormData((prev: any) => ({ ...prev, image: '' }));
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
+  };
+
+  const uploadToUploadcare = async (file: File): Promise<string> => {
+    const uploadFormData = new FormData();
+    uploadFormData.append('UPLOADCARE_PUB_KEY', UPLOADCARE_PUB_KEY);
+    uploadFormData.append('UPLOADCARE_STORE', '1');
+    uploadFormData.append('file', file);
+
+    const response = await fetch('https://upload.uploadcare.com/base/', {
+      method: 'POST',
+      body: uploadFormData
+    });
+
+    if (!response.ok) throw new Error("Erreur upload");
+    const data = await response.json();
+    return `https://15pz83n613.ucarecd.net/${data.file}/-/preview/720x720/-/quality/smart/-/format/auto/`;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -106,7 +67,14 @@ export const AddProductForm: FC = () => {
     setLoading(true);
 
     try {
-      if (!formData.image) {
+      let finalImageUrl = formData.image;
+
+      // Si une nouvelle image a été sélectionnée, on l'upload maintenant
+      if (selectedFile) {
+        finalImageUrl = await uploadToUploadcare(selectedFile);
+      }
+
+      if (!finalImageUrl) {
         alert('Veuillez ajouter une image pour le produit.');
         setLoading(false);
         return;
@@ -114,9 +82,6 @@ export const AddProductForm: FC = () => {
 
       // Validation du stock : doit être un nombre entier strictement positif
       const stockValue = Math.round(Number(formData.stock));
-      console.log('--- DBG: SUBMIT AJOUT ---');
-      console.log('Stock brut:', formData.stock);
-      console.log('Stock converti (stockValue):', stockValue);
 
       if (isNaN(stockValue) || stockValue <= 0) {
         alert('Le stock doit être un nombre entier strictement positif.');
@@ -126,6 +91,7 @@ export const AddProductForm: FC = () => {
 
       const preparedData = {
         ...formData,
+        image: finalImageUrl,
         stock: stockValue,
         originalPrice: formData.originalPrice || null,
         discount: formData.discount || null
@@ -140,6 +106,7 @@ export const AddProductForm: FC = () => {
 
       await addProduct(preparedData);
       setSuccess(true);
+      setSelectedFile(null);
 
       setFormData({
         name: '',
@@ -152,10 +119,6 @@ export const AddProductForm: FC = () => {
         discount: undefined,
         stock: 1
       });
-      setImagePreview(null);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
 
       setTimeout(() => setSuccess(false), 3000);
     } catch (error) {
@@ -313,58 +276,11 @@ export const AddProductForm: FC = () => {
             )}
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Image du produit *
-            </label>
-
-            <div
-              className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${isDragging
-                ? 'border-purple-500 bg-purple-50'
-                : 'border-gray-300 hover:border-gray-400'
-                }`}
-              onDragEnter={handleDragEnter}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              {!imagePreview ? (
-                <div className="space-y-2">
-                  <div className="mx-auto w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
-                    <Upload className="w-6 h-6 text-purple-600" />
-                  </div>
-                  <p className="text-gray-700">Glissez-déposez une image ici ou cliquez pour parcourir</p>
-                  <p className="text-sm text-gray-500">PNG, JPG, JPEG (max 5MB)</p>
-                </div>
-              ) : (
-                <div className="relative">
-                  <img
-                    src={imagePreview}
-                    alt="Aperçu"
-                    className="h-48 mx-auto object-contain rounded-lg"
-                  />
-                  <button
-                    type="button"
-                    onClick={(e: any) => {
-                      e.stopPropagation();
-                      handleRemoveImage();
-                    }}
-                    className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600 transition-colors"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              )}
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleImageChange}
-                accept="image/*"
-                className="hidden"
-              />
-            </div>
-          </div>
+          <ImageUploader 
+            value={formData.image} 
+            onFileSelect={handleFileSelect} 
+            onRemove={handleRemoveImage} 
+          />
 
           <div className="space-y-3">
             <div className="flex items-center">
@@ -387,7 +303,6 @@ export const AddProductForm: FC = () => {
             disabled={loading}
             className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-3 rounded-lg hover:from-pink-600 hover:to-purple-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium flex items-center justify-center space-x-2"
           >
-            <Plus className="w-4 h-4" />
             <span>{loading ? 'Ajout en cours...' : 'Ajouter le produit'}</span>
           </button>
         </form>

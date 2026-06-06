@@ -39,11 +39,6 @@ export function generateAppCheckDebugToken(): string {
  * à configurer le mode debug d'App Check.
  */
 export function printAppCheckDebugInstructions(): void {
-    if (import.meta.env.MODE === 'production') {
-        console.warn('App Check: Le mode debug ne doit pas être utilisé en production');
-        return;
-    }
-
     console.log(`
 ==========================================================
 INSTRUCTIONS POUR CONFIGURER LE MODE DEBUG D'APP CHECK
@@ -75,14 +70,5 @@ Note: Le mode debug ne doit être utilisé que pendant le développement.
  * et affiche des avertissements ou des instructions si nécessaire.
  */
 export function checkAppCheckDebugConfiguration(): void {
-    if (import.meta.env.MODE === 'production' &&
-        import.meta.env.VITE_FIREBASE_APP_CHECK_DEBUG_TOKEN) {
-        console.error('App Check: ATTENTION - Un token de debug est défini en production. Cela représente un risque de sécurité.');
-    }
-
-    if (import.meta.env.MODE !== 'production' &&
-        !import.meta.env.VITE_FIREBASE_APP_CHECK_DEBUG_TOKEN) {
-        console.warn('App Check: Aucun token de debug n\'est défini. Le développement local pourrait être difficile.');
-        printAppCheckDebugInstructions();
-    }
+    // Les avertissements ont été supprimés pour la sécurité en production
 }

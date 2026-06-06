@@ -69,7 +69,7 @@ export default defineConfig(({ mode }: ConfigEnv): UserConfig => {
   const isProd = mode === 'production';
 
   // Vérifier si l'obfuscation est activée (peut être désactivée via variable d'environnement)
-  const enableObfuscation = env.VITE_ENABLE_OBFUSCATION !== 'false';
+  const enableObfuscation = false;
 
   // Configurer les plugins
   const plugins: (Plugin | PluginOption)[] = [react()];

@@ -61,6 +61,16 @@ function generateRobotsTxt() {
     const robotsTxt = `# Robots.txt pour Longrich
 # Dernière mise à jour: ${new Date().toISOString().split('T')[0]}
 
+# Autoriser les robots de partage sociaux
+User-agent: facebookexternalhit
+Allow: /
+
+User-agent: WhatsApp
+Allow: /
+
+User-agent: Twitterbot
+Allow: /
+
 # Bloquer les attaques de bots malveillants connu
 User-agent: AhrefsBot
 Disallow: /

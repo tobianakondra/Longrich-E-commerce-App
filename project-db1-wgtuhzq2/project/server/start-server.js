@@ -63,18 +63,17 @@ if (!fs.existsSync(envPath)) {
   console.warn('\x1b[33m%s\x1b[0m', 'Créez un fichier .env basé sur .env.example avec vos clés API');
 }
 
-// Vérifier les dépendances
+// Vérifier les dépendances réseau
 console.log('Vérification des dépendances réseau...');
 try {
-  execSync('ping -c 1 app.paydunya.com', { stdio: 'ignore' });
-  console.log('\x1b[32m%s\x1b[0m', '✓ Connexion à Paydunya disponible');
+  execSync('ping -c 1 api.sene-pay.com', { stdio: 'ignore' });
+  console.log('\x1b[32m%s\x1b[0m', '✓ Connexion à SenePay disponible');
 } catch (error) {
-  console.warn('\x1b[33m%s\x1b[0m', 'ATTENTION: Impossible de se connecter à app.paydunya.com');
-  console.warn('\x1b[33m%s\x1b[0m', 'Vérifiez votre connexion Internet');
+  console.warn('\x1b[33m%s\x1b[0m', 'ATTENTION: Impossible de se connecter à api.sene-pay.com');
 }
 
-// Vérifier les clés API Paydunya
-const requiredEnvVars = ['PAYDUNYA_MASTER_KEY', 'PAYDUNYA_PRIVATE_KEY', 'PAYDUNYA_TOKEN'];
+// Vérifier les clés API SenePay
+const requiredEnvVars = ['SENEPAY_API_KEY', 'SENEPAY_API_SECRET'];
 const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
 
 if (missingVars.length > 0) {

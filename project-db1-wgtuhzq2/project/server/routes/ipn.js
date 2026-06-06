@@ -1,8 +1,8 @@
 /**
- * Gestionnaire IPN (Instant Payment Notification) pour PayDunya/Wave
+ * Gestionnaire IPN (Instant Payment Notification) pour SenePay
  * 
- * Ce fichier gère les notifications de paiement instantanées envoyées par PayDunya
- * lorsqu'un paiement est confirmé, annulé ou échoué.
+ * Ce fichier gère les notifications de paiement instantanées envoyées par SenePay
+ * lorsqu'un paiement est confirmé.
  */
 
 import crypto from 'crypto';
@@ -17,347 +17,108 @@ router.use(express.json());
 router.use(express.urlencoded({ extended: true }));
 
 /**
- * Vérifie la signature hash de PayDunya pour s'assurer que la requête provient bien de leurs serveurs
- * @param {string} masterKey - La clé principale PayDunya
- * @param {string} receivedHash - Le hash reçu de PayDunya
- * @returns {boolean} - True si la signature est valide
+ * Vérifie la signature HMAC-SHA256 de SenePay
+ * @param {Object} payload - Le corps de la requête (objet JSON)
+ * @param {string} signature - La signature reçue dans le header X-SenePay-Signature
+ * @param {string} secret - Le SENEPAY_WEBHOOK_SECRET
+ * @returns {boolean}
  */
-function verifyPayDunyaHash(masterKey, receivedHash) {
+function verifySenePaySignature(payload, signature, secret) {
   try {
-    // Générer le hash SHA-512 de la master key
-    const expectedHash = crypto.createHash('sha512').update(masterKey).digest('hex');
+    const data = JSON.stringify(payload);
+    const expectedSignature = crypto
+      .createHmac('sha256', secret)
+      .update(data)
+      .digest('hex');
 
-    console.log(`[IPN] Hash attendu: ${expectedHash}`);
-    console.log(`[IPN] Hash reçu: ${receivedHash}`);
-    console.log(`[IPN] Longueur hash attendu: ${expectedHash.length}`);
-    console.log(`[IPN] Longueur hash reçu: ${receivedHash.length}`);
-
-    // Vérifier d'abord que les hash ont la même longueur
-    if (expectedHash.length !== receivedHash.length) {
-      console.log(`[IPN] Longueurs différentes - hash invalide`);
-      return false;
-    }
-
-    // Comparer les hash de manière sécurisée
     return crypto.timingSafeEqual(
-      Buffer.from(expectedHash, 'hex'),
-      Buffer.from(receivedHash, 'hex')
+      Buffer.from(expectedSignature),
+      Buffer.from(signature)
     );
   } catch (error) {
-    console.error('[IPN] Erreur lors de la vérification du hash:', error);
+    console.error('[SenePay IPN] Erreur de vérification signature:', error);
     return false;
   }
 }
 
 /**
- * Traite les données de paiement reçues via IPN
- * @param {Object} paymentData - Les données de paiement de PayDunya
+ * Endpoint principal pour recevoir les notifications IPN de SenePay
  */
-function processPaymentData(paymentData) {
-  const { invoice, status, customer, receipt_url, custom_data } = paymentData;
+router.post('/senepay-ipn', async (req, res) => {
+  const timestamp = new Date().toISOString();
+  const signature = req.headers['x-senepay-signature'];
+  const webhookSecret = process.env.SENEPAY_WEBHOOK_SECRET;
 
-  console.log(`[IPN] Traitement du paiement - Token: ${invoice.token}, Statut: ${status}`);
+  console.log(`[SenePay IPN] ${timestamp} - Notification reçue`);
 
-  // Traiter selon le statut du paiement
-  switch (status) {
-    case 'completed':
-      handleSuccessfulPayment(paymentData);
-      break;
-    case 'cancelled':
-      handleCancelledPayment(paymentData);
-      break;
-    case 'failed':
-      handleFailedPayment(paymentData);
-      break;
-    default:
-      console.warn(`[IPN] Statut de paiement inconnu: ${status}`);
+  // 1. Réponse rapide à SenePay (Accusé de réception)
+  if (!signature || !webhookSecret || !verifySenePaySignature(req.body, signature, webhookSecret)) {
+    console.error('[SenePay IPN] Signature invalide ou configuration manquante');
+    return res.status(401).send('Invalid signature');
   }
-}
 
-/**
- * Gère les paiements réussis
- * @param {Object} paymentData - Les données de paiement
- */
-async function handleSuccessfulPayment(paymentData) {
-  const { invoice, customer, receipt_url, custom_data } = paymentData;
+  // Signature valide, on répond 200 immédiatement pour libérer SenePay
+  res.status(200).send('OK');
 
-  console.log(`[IPN] Paiement réussi pour le token: ${invoice.token}`);
-  console.log(`[IPN] Client: ${customer.name} (${customer.phone})`);
-  console.log(`[IPN] Montant: ${invoice.total_amount} FCFA`);
-  console.log(`[IPN] Reçu PDF: ${receipt_url}`);
+  // 2. Traitement asynchrone (en arrière-plan)
+  const { orderReference, status, transactionId, amount, customerPhone } = req.body;
+  
+  if (status !== 'Complete') {
+    console.log(`[SenePay IPN] Commande ${orderReference} ignorer (Statut: ${status})`);
+    return;
+  }
 
   try {
     const db = admin.firestore();
-    const orderRef = db.collection('orders').doc(invoice.token);
+    const orderRef = db.collection('orders').doc(orderReference);
 
-    // 1. 🔥 METTRE À JOUR FIRESTORE
+    // 🔥 GESTION DE L'IDEMPOTENCE
+    const orderDoc = await orderRef.get();
+    
+    if (!orderDoc.exists) {
+      console.warn(`[SenePay IPN] Commande ${orderReference} introuvable dans Firestore`);
+      return;
+    }
+
+    const orderData = orderDoc.data();
+    if (orderData.paymentStatus === 'paid' || orderData.status === 'completed') {
+      console.log(`[SenePay IPN] Commande ${orderReference} déjà marquée comme payée. Skip.`);
+      return;
+    }
+
+    // 3. Mise à jour Firestore
     await orderRef.update({
       status: 'completed',
       paymentStatus: 'paid',
       paidAt: admin.firestore.FieldValue.serverTimestamp(),
-      receiptUrl: receipt_url || null,
-      paymentMethod: 'wave',
+      paymentMethod: 'wave_senepay',
       paymentData: {
-        transactionId: invoice.token,
-        amount: invoice.total_amount,
-        currency: 'XOF',
-        customerName: customer.name,
-        customerPhone: customer.phone,
+        transactionId: transactionId || orderReference,
+        amount: amount,
+        customerPhone: customerPhone,
+        provider: 'senepay',
         processedAt: new Date().toISOString()
       },
       updatedAt: admin.firestore.FieldValue.serverTimestamp()
     });
 
-    console.log(`✅ [IPN] Commande ${invoice.token} mise à jour dans Firestore`);
+    console.log(`✅ [SenePay IPN] Commande ${orderReference} validée`);
 
-    // 2. 🔥 RÉCUPÉRER L'USERID DEPUIS LA COMMANDE
-    const orderDoc = await orderRef.get();
-    const orderData = orderDoc.data();
-
-    if (orderData && orderData.userId) {
-      // 3. 🔥 NOTIFIER VIA SSE
-      const notificationSent = sseService.notifyOrderUpdate(orderData.userId, {
+    // 4. Notification SSE
+    if (orderData.userId) {
+      sseService.notifyOrderUpdate(orderData.userId, {
         type: 'payment-confirmed',
-        orderId: invoice.token,
+        orderId: orderReference,
         status: 'completed',
-        message: 'Paiement confirmé avec succès !',
-        amount: invoice.total_amount,
-        receiptUrl: receipt_url,
+        message: 'Votre paiement via SenePay a été confirmé !',
+        amount: amount,
         timestamp: new Date().toISOString()
       });
-
-      if (notificationSent) {
-        console.log(`✅ [IPN] Notification SSE envoyée à l'utilisateur: ${orderData.userId}`);
-      } else {
-        console.log(`⚠️ [IPN] Utilisateur ${orderData.userId} non connecté via SSE`);
-      }
-    } else {
-      console.warn(`⚠️ [IPN] UserId non trouvé pour la commande ${invoice.token}`);
     }
-
-    console.log(`✅ [IPN] Paiement traité avec succès pour ${invoice.token}`);
 
   } catch (error) {
-    console.error(`❌ [IPN] Erreur lors du traitement du paiement réussi:`, error);
-
-    // En cas d'erreur, on peut essayer de notifier quand même
-    try {
-      sseService.broadcast('payment-error', {
-        message: 'Erreur lors du traitement du paiement',
-        orderId: invoice.token,
-        error: error.message
-      });
-    } catch (broadcastError) {
-      console.error(`❌ [IPN] Erreur lors de la diffusion d'erreur:`, broadcastError);
-    }
+    console.error(`❌ [SenePay IPN] Erreur de traitement pour ${orderReference}:`, error);
   }
-}
-
-/**
- * Gère les paiements annulés
- * @param {Object} paymentData - Les données de paiement
- */
-async function handleCancelledPayment(paymentData) {
-  const { invoice, customer } = paymentData;
-
-  console.log(`[IPN] Paiement annulé pour le token: ${invoice.token}`);
-  console.log(`[IPN] Client: ${customer.name} (${customer.phone})`);
-
-  try {
-    const db = admin.firestore();
-    const orderRef = db.collection('orders').doc(invoice.token);
-
-    // 1. 🔥 METTRE À JOUR FIRESTORE
-    await orderRef.update({
-      status: 'cancelled',
-      paymentStatus: 'cancelled',
-      cancelledAt: admin.firestore.FieldValue.serverTimestamp(),
-      paymentData: {
-        transactionId: invoice.token,
-        amount: invoice.total_amount,
-        currency: 'XOF',
-        customerName: customer.name,
-        customerPhone: customer.phone,
-        cancelledAt: new Date().toISOString()
-      },
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
-    });
-
-    console.log(`✅ [IPN] Commande ${invoice.token} marquée comme annulée dans Firestore`);
-
-    // 2. 🔥 RÉCUPÉRER L'USERID ET NOTIFIER
-    const orderDoc = await orderRef.get();
-    const orderData = orderDoc.data();
-
-    if (orderData && orderData.userId) {
-      // 3. 🔥 NOTIFIER VIA SSE
-      const notificationSent = sseService.notifyOrderUpdate(orderData.userId, {
-        type: 'payment-cancelled',
-        orderId: invoice.token,
-        status: 'cancelled',
-        message: 'Paiement annulé',
-        amount: invoice.total_amount,
-        timestamp: new Date().toISOString()
-      });
-
-      if (notificationSent) {
-        console.log(`✅ [IPN] Notification d'annulation SSE envoyée à l'utilisateur: ${orderData.userId}`);
-      } else {
-        console.log(`⚠️ [IPN] Utilisateur ${orderData.userId} non connecté via SSE`);
-      }
-    }
-
-    console.log(`✅ [IPN] Paiement annulé traité pour ${invoice.token}`);
-
-  } catch (error) {
-    console.error(`❌ [IPN] Erreur lors du traitement du paiement annulé:`, error);
-  }
-}
-
-/**
- * Gère les paiements échoués
- * @param {Object} paymentData - Les données de paiement
- */
-async function handleFailedPayment(paymentData) {
-  const { invoice, customer } = paymentData;
-
-  console.log(`[IPN] Paiement échoué pour le token: ${invoice.token}`);
-  console.log(`[IPN] Client: ${customer.name} (${customer.phone})`);
-
-  try {
-    const db = admin.firestore();
-    const orderRef = db.collection('orders').doc(invoice.token);
-
-    // 1. 🔥 METTRE À JOUR FIRESTORE
-    await orderRef.update({
-      status: 'failed',
-      paymentStatus: 'failed',
-      failedAt: admin.firestore.FieldValue.serverTimestamp(),
-      paymentData: {
-        transactionId: invoice.token,
-        amount: invoice.total_amount,
-        currency: 'XOF',
-        customerName: customer.name,
-        customerPhone: customer.phone,
-        failedAt: new Date().toISOString()
-      },
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
-    });
-
-    console.log(`✅ [IPN] Commande ${invoice.token} marquée comme échouée dans Firestore`);
-
-    // 2. 🔥 RÉCUPÉRER L'USERID ET NOTIFIER
-    const orderDoc = await orderRef.get();
-    const orderData = orderDoc.data();
-
-    if (orderData && orderData.userId) {
-      // 3. 🔥 NOTIFIER VIA SSE
-      const notificationSent = sseService.notifyOrderUpdate(orderData.userId, {
-        type: 'payment-failed',
-        orderId: invoice.token,
-        status: 'failed',
-        message: 'Échec du paiement. Vous pouvez réessayer.',
-        amount: invoice.total_amount,
-        retryUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/retry-payment/${invoice.token}`,
-        timestamp: new Date().toISOString()
-      });
-
-      if (notificationSent) {
-        console.log(`✅ [IPN] Notification d'échec SSE envoyée à l'utilisateur: ${orderData.userId}`);
-      } else {
-        console.log(`⚠️ [IPN] Utilisateur ${orderData.userId} non connecté via SSE`);
-      }
-    }
-
-    console.log(`✅ [IPN] Paiement échoué traité pour ${invoice.token}`);
-
-  } catch (error) {
-    console.error(`❌ [IPN] Erreur lors du traitement du paiement échoué:`, error);
-  }
-}
-
-/**
- * Endpoint principal pour recevoir les notifications IPN de PayDunya
- */
-router.post('/paydunya-ipn', async (req, res) => {
-  try {
-    const timestamp = new Date().toISOString();
-    console.log(`[IPN] ${timestamp} - Notification IPN reçue de PayDunya`);
-    console.log('[IPN] IP source:', req.ip || req.connection.remoteAddress);
-    console.log('[IPN] Headers:', JSON.stringify(req.headers, null, 2));
-    console.log('[IPN] Body complet:', JSON.stringify(req.body, null, 2));
-
-    // Vérifier que nous avons reçu des données
-    if (!req.body || !req.body.data) {
-      console.error('[IPN] Données IPN manquantes ou invalides');
-      return res.status(400).json({
-        error: 'Données IPN manquantes ou invalides',
-        received: req.body
-      });
-    }
-
-    const ipnData = req.body.data;
-
-    // Vérifier les champs obligatoires
-    if (!ipnData.hash || !ipnData.invoice || !ipnData.invoice.token) {
-      console.error('[IPN] Champs obligatoires manquants dans les données IPN');
-      return res.status(400).json({
-        error: 'Champs obligatoires manquants',
-        required: ['hash', 'invoice.token'],
-        received: Object.keys(ipnData)
-      });
-    }
-
-    // Récupérer la master key depuis les variables d'environnement
-    const masterKey = process.env.PAYDUNYA_MASTER_KEY;
-    if (!masterKey) {
-      console.error('[IPN] PAYDUNYA_MASTER_KEY non configurée');
-      return res.status(500).json({ error: 'Configuration serveur manquante' });
-    }
-
-    // Vérifier la signature hash
-    const isValidHash = verifyPayDunyaHash(masterKey, ipnData.hash);
-    if (!isValidHash) {
-      console.error('[IPN] Hash invalide - possible tentative de fraude');
-      return res.status(403).json({ error: 'Signature invalide' });
-    }
-
-    console.log('[IPN] Signature hash vérifiée avec succès');
-
-    // Traiter les données de paiement
-    processPaymentData(ipnData);
-
-    // Répondre avec succès à PayDunya
-    res.status(200).json({
-      status: 'success',
-      message: 'IPN traité avec succès',
-      token: ipnData.invoice.token,
-      timestamp: new Date().toISOString()
-    });
-
-  } catch (error) {
-    console.error('[IPN] Erreur lors du traitement de l\'IPN:', error);
-
-    // Répondre avec une erreur à PayDunya
-    res.status(500).json({
-      status: 'error',
-      message: 'Erreur lors du traitement de l\'IPN',
-      error: error.message,
-      timestamp: new Date().toISOString()
-    });
-  }
-});
-
-/**
- * Endpoint de test pour vérifier que l'IPN fonctionne
- */
-router.get('/test-ipn', (req, res) => {
-  res.json({
-    status: 'success',
-    message: 'Endpoint IPN fonctionnel',
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development'
-  });
 });
 
 /**
@@ -368,11 +129,9 @@ router.get('/payment-status/:token', async (req, res) => {
     const { token } = req.params;
 
     // TODO: Implémenter la récupération du statut depuis la base de données
-    // const paymentStatus = await getPaymentStatus(token);
-
     res.json({
       token,
-      status: 'pending', // Remplacer par le statut réel
+      status: 'pending',
       message: 'Statut du paiement récupéré',
       timestamp: new Date().toISOString()
     });
@@ -384,6 +143,17 @@ router.get('/payment-status/:token', async (req, res) => {
       message: error.message
     });
   }
+});
+
+/**
+ * Endpoint de test pour vérifier que l'IPN est accessible
+ */
+router.get('/test-ipn', (req, res) => {
+  res.json({
+    status: 'success',
+    message: 'Endpoint IPN SenePay opérationnel',
+    timestamp: new Date().toISOString()
+  });
 });
 
 export default router;

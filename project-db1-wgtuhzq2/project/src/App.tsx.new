@@ -1,0 +1,53 @@
+import { type FC, type ReactNode } from 'react';
+
+interface AppProps {
+  router?: FC<{ children: ReactNode }>;
+  ssrData?: Record<string, any>;
+}
+
+function AppInner() {
+  return (
+    <div className="min-h-screen flex flex-col">
+      <Header />
+      <main className="flex-1 pb-16 md:pb-0">
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/products" element={<Products />} />
+          <Route path="/cart" element={<Cart />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/admin-secure-x29a7b" element={<AdminDashboard />} />
+          <Route path="/product/detail/:id" element={<ProductDetail />} />
+        </Routes>
+      </main>
+      <Footer />
+      <BottomNav />
+    </div>
+  );
+}
+
+const App: FC<AppProps> = ({ router: Router = BrowserRouter, ssrData }) => {
+  const routerProps = Router === StaticRouter
+    ? { location: typeof window !== 'undefined' ? window.location.pathname : '/', context: ssrData }
+    : {};
+
+  return (
+    <Router {...routerProps}>
+      <AuthProvider>
+        <CartProvider>
+          <AdminProvider>
+            <ReviewProvider>
+              <AppInner />
+            </ReviewProvider>
+          </AdminProvider>
+        </CartProvider>
+      </AuthProvider>
+    </Router>
+  );
+};
+
+export default App;

@@ -15,10 +15,9 @@ const PAYDUNYA_MASTER_KEY = process.env.PAYDUNYA_MASTER_KEY;
 const PAYDUNYA_PRIVATE_KEY = process.env.PAYDUNYA_PRIVATE_KEY;
 const PAYDUNYA_TOKEN = process.env.PAYDUNYA_TOKEN;
 
-// Vérifier que les clés sont définies
+// Vérifier que les clés sont définies (Désactivé pour migration SenePay)
 if (!PAYDUNYA_MASTER_KEY || !PAYDUNYA_PRIVATE_KEY || !PAYDUNYA_TOKEN) {
-  console.error('Erreur: Les clés API Paydunya ne sont pas définies');
-  process.exit(1);
+  console.warn('⚠️ Warning: Les clés API Paydunya ne sont pas définies. Ce service (PayDunya) ne fonctionnera pas, mais SenePay prendra le relais.');
 }
 
 // Fonction utilitaire pour les requêtes avec retry
