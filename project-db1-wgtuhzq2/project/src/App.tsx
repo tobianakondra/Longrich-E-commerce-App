@@ -24,8 +24,8 @@ const SECURE_ADMIN_PATH = "dashboard-management-secure-x29a7b";
 function App() {
   return (
     <AuthProvider>
-      <CartProvider>
-        <AdminProvider>
+      <AdminProvider>
+        <CartProvider>
           <ReviewProvider>
             <Router>
               <div className="min-h-screen flex flex-col">
@@ -50,8 +50,8 @@ function App() {
               </div>
             </Router>
           </ReviewProvider>
-        </AdminProvider>
-      </CartProvider>
+        </CartProvider>
+      </AdminProvider>
     </AuthProvider>
   );
 }

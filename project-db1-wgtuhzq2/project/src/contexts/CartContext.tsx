@@ -1,6 +1,7 @@
 import { type FC, createContext, useContext, useEffect, useState } from 'react';
 import { CartItem, Product } from '../types';
 import { useAuth } from './AuthContext';
+import { useAdmin } from './AdminContext';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 
@@ -29,6 +30,7 @@ export const CartProvider: FC<{ children: React.ReactNode }> = ({ children }) =>
   const [items, setItems] = useState<CartItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { currentUser } = useAuth();
+  const { products: allProducts, loading: productsLoading } = useAdmin();
 
   // Charger le panier depuis Firestore
   useEffect(() => {
@@ -51,6 +53,31 @@ export const CartProvider: FC<{ children: React.ReactNode }> = ({ children }) =>
 
     loadCart();
   }, [currentUser]);
+
+  // Synchroniser le panier avec les données du catalogue (prix, nom, image)
+  useEffect(() => {
+    if (!isLoading && !productsLoading && allProducts.length > 0 && items.length > 0) {
+      let hasChanges = false;
+      const syncedItems = items.map(item => {
+        const currentProduct = allProducts.find(p => p.id === item.id);
+        if (currentProduct) {
+          // Vérifier si des données critiques ont changé (prix, nom ou image)
+          if (item.price !== currentProduct.price || 
+              item.name !== currentProduct.name || 
+              item.image !== currentProduct.image) {
+            hasChanges = true;
+            return { ...currentProduct, quantity: item.quantity };
+          }
+        }
+        return item;
+      });
+
+      if (hasChanges) {
+        setItems(syncedItems);
+        saveCart(syncedItems);
+      }
+    }
+  }, [allProducts, productsLoading, isLoading]);
 
   // Sauvegarder le panier dans Firestore
   const saveCart = async (newItems: CartItem[]) => {

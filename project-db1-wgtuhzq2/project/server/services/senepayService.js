@@ -54,27 +54,37 @@ export async function initiateWavePayment(paymentData) {
     });
 
     const data = await response.json();
+    console.log('[SenePay] Réponse brute de l\'API:', JSON.stringify(data));
 
     if (!response.ok) {
       console.error('[SenePay] Erreur lors de l\'initialisation:', data);
       throw new Error(data.message || 'Erreur technique SenePay');
     }
 
-    console.log(`[SenePay] Paiement initié avec succès. ID Interne: ${data.internalId}`);
+    // Récupération robuste des champs (SenePay peut varier entre camelCase et snake_case)
+    const internalId = data.internalId || data.internal_id || data.transactionId || data.transaction_id;
+    const redirectUrl = data.redirectUrl || data.redirect_url || data.url;
+    const token = data.token || data.payment_token;
+    const nextAction = data.nextAction || data.next_action;
+
+    console.log(`[SenePay] Paiement initié. ID Interne: ${internalId}`);
 
     // Pour Wave, SenePay renvoie une redirectUrl
-    if (data.nextAction === 'REDIRECT_TO_PROVIDER_LINK' && data.redirectUrl) {
+    if ((nextAction === 'REDIRECT_TO_PROVIDER_LINK' || nextAction === 'REDIRECT') && redirectUrl) {
       return {
         success: true,
-        redirectUrl: data.redirectUrl,
-        token: data.token,
-        internalId: data.internalId
+        redirectUrl: redirectUrl,
+        token: token,
+        internalId: internalId
       };
     }
 
     return {
       success: true,
-      ...data
+      ...data,
+      redirectUrl: redirectUrl, // S'assurer que ces clés existent pour le parent
+      internalId: internalId,
+      token: token
     };
 
   } catch (error) {

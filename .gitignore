@@ -65,5 +65,15 @@ node_modules/
 # dotenv environment variables file
 .env
 
+# Firebase and Secrets
+.env
+.env.*
+*.json
+!package.json
+!package-lock.json
+!tsconfig.json
+!firebase.json
+!.firebaserc
+
 # dataconnect generated files
 .dataconnect
