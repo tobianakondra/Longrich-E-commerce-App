@@ -12,25 +12,26 @@ import sseService from '../services/sseService.js';
 
 const router = express.Router();
 
-// Middleware pour parser le JSON des requêtes IPN
-router.use(express.json());
-router.use(express.urlencoded({ extended: true }));
-
 /**
  * Vérifie la signature HMAC-SHA256 de SenePay
- * @param {Object} payload - Le corps de la requête (objet JSON)
+ * @param {Buffer} rawBody - Le corps brut de la requête
  * @param {string} signature - La signature reçue dans le header X-SenePay-Signature
  * @param {string} secret - Le SENEPAY_WEBHOOK_SECRET
  * @returns {boolean}
  */
-function verifySenePaySignature(payload, signature, secret) {
+function verifySenePaySignature(rawBody, signature, secret) {
   try {
-    const data = JSON.stringify(payload);
+    if (!rawBody) {
+      console.error('[SenePay IPN] Corps brut manquant');
+      return false;
+    }
+
     const expectedSignature = crypto
       .createHmac('sha256', secret)
-      .update(data)
+      .update(rawBody)
       .digest('hex');
 
+    // Comparaison sécurisée contre les attaques temporelles
     return crypto.timingSafeEqual(
       Buffer.from(expectedSignature),
       Buffer.from(signature)
@@ -52,7 +53,7 @@ router.post('/senepay-ipn', async (req, res) => {
   console.log(`[SenePay IPN] ${timestamp} - Notification reçue`);
 
   // 1. Réponse rapide à SenePay (Accusé de réception)
-  if (!signature || !webhookSecret || !verifySenePaySignature(req.body, signature, webhookSecret)) {
+  if (!signature || !webhookSecret || !verifySenePaySignature(req.rawBody, signature, webhookSecret)) {
     console.error('[SenePay IPN] Signature invalide ou configuration manquante');
     return res.status(401).send('Invalid signature');
   }

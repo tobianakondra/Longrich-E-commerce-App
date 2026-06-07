@@ -17,6 +17,7 @@ import { Privacy } from './pages/Privacy';
 import { Profile } from './pages/Profile';
 import { AdminDashboard } from './pages/Admin/AdminDashboard';
 import { ProductDetail } from './pages/ProductDetail';
+import { OrderSuccess } from './pages/OrderSuccess';
 
 // Chemin d'administration sécurisé et difficile à deviner
 const SECURE_ADMIN_PATH = "dashboard-management-secure-x29a7b";
@@ -43,6 +44,7 @@ function App() {
                     <Route path="/profile" element={<Profile />} />
                     <Route path={`/${SECURE_ADMIN_PATH}`} element={<AdminDashboard />} />
                     <Route path="/product/detail/:id" element={<ProductDetail />} />
+                    <Route path="/order-success/:orderId" element={<OrderSuccess />} />
                   </Routes>
                 </main>
                 <Footer />

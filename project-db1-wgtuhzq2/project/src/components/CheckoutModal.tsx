@@ -319,6 +319,15 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, initialS
           region: formData.region,
           quartier: formData.quartier,
           amount: totalPrice,
+          customerName: currentUser?.displayName || 'Client',
+          userId: currentUser?.uid,
+          items: items.map(item => ({
+            id: item.id,
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity,
+            image: item.image
+          })),
           description: `Commande Longrich - ${items.length} produit(s)`
         })
       });

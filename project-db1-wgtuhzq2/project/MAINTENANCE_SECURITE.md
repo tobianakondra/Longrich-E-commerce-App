@@ -19,20 +19,26 @@ Si vous changez de domaine ou de projet Firebase, vous devez :
 
 ## 2. Gestion des Clés API (Google Cloud Console)
 
-Les clés API Firebase (commençant par `AIza...`) sont publiques par nature. Leur sécurité repose sur les **restrictions côté serveur**.
+Les clés API Firebase (commençant par `AIza...`) sont publiques. Pour éviter qu'un tiers ne les utilise à vos frais ou pour accéder à vos données, nous avons mis en place un **"Bouclier de Restrictions"**.
 
-### Restrictions d'API (Obligatoire)
-Pour éviter qu'une clé ne soit utilisée pour d'autres services coûteux, elle doit être restreinte aux API suivantes :
-*   **Identity Toolkit API** (Authentification)
-*   **Cloud Firestore API** (Base de données)
-*   **Firebase App Check API** (Vérification de l'application)
-*   **Token Service API** (Rafraîchissement des sessions)
+### Pourquoi ces restrictions ?
+Sans ces réglages, n'importe qui possédant votre clé pourrait appeler d'autres services Google payants (Google Maps, Traduction, etc.) en utilisant votre compte. Le bouclier limite la clé à **votre site uniquement** et aux **services Firebase uniquement**.
 
-### Restrictions d'application (HTTP Referrers)
-La clé ne doit fonctionner que sur vos domaines officiels :
-*   `https://longrich.online/*`
-*   `https://longrich-3212d.firebaseapp.com/*`
-*   `https://longrich-3212d.web.app/*`
+### Configuration du Bouclier (Application)
+La clé est restreinte par **"HTTP Referrers"** (Sites Web). Elle rejette toute requête ne provenant pas de :
+*   `https://longrich.online/*` (Votre domaine principal)
+*   `https://longrich-3212d.firebaseapp.com/*` (Domaine technique Firebase)
+*   `https://longrich-3212d.web.app/*` (Domaine secondaire Firebase)
+*   `http://localhost:*` (Uniquement pour vos tests locaux)
+
+### Configuration du Bouclier (API)
+La clé est limitée aux services strictement nécessaires au projet. Toute tentative d'utiliser cette clé pour un autre service Google échouera. Les API autorisées sont :
+1.  **Identity Toolkit API :** Pour la connexion des clients (Auth).
+2.  **Cloud Firestore API :** Pour l'accès à la base de données des produits et commandes.
+3.  **Firebase App Check API :** Pour la protection contre les bots.
+4.  **Token Service API :** Pour la gestion sécurisée des sessions et jetons.
+
+**⚠️ Note :** Si vous ajoutez un nouveau service Google (ex: Google Maps pour la livraison), vous **devez** retourner dans la console Google Cloud pour l'ajouter à cette liste, sinon le service renverra une erreur 403.
 
 ---
 

@@ -11,6 +11,7 @@ dotenv.config();
 const SENEPAY_API_KEY = process.env.SENEPAY_API_KEY;
 const SENEPAY_API_SECRET = process.env.SENEPAY_API_SECRET;
 const IPN_BASE_URL = process.env.IPN_BASE_URL || 'https://api.longrich.online';
+const FRONTEND_URL = process.env.FRONTEND_URL || 'https://longrich.online';
 const BASE_URL = 'https://api.sene-pay.com';
 
 if (!SENEPAY_API_KEY || !SENEPAY_API_SECRET) {
@@ -46,6 +47,8 @@ export async function initiateWavePayment(paymentData) {
         customerName: paymentData.customerName || 'Client Longrich',
         orderId: paymentData.orderId,
         webhookUrl: `${IPN_BASE_URL}/api/ipn/senepay-ipn`,
+        returnUrl: `${FRONTEND_URL}/order-success/${paymentData.orderId}`,
+        cancelUrl: `${FRONTEND_URL}/cart?status=cancelled`,
         metadata: {
           platform: 'Longrich E-commerce',
           ...paymentData.metadata

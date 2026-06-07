@@ -80,8 +80,13 @@ const twilioClient = twilio(
   process.env.TWILIO_AUTH_TOKEN
 );
 
-// Middleware de base avec limite de taille
-app.use(express.json({ limit: '10kb' })); // Limiter la taille des requêtes JSON à 10KB
+// Middleware de base avec limite de taille et capture du corps brut pour les signatures (IPN)
+app.use(express.json({ 
+  limit: '50kb',
+  verify: (req, res, buf) => {
+    req.rawBody = buf;
+  }
+}));
 app.use(cookieParser());
 
 // ========================================
@@ -158,24 +163,16 @@ app.use((req, res, next) => {
   const referer = req.headers.referer;
   const origin = req.headers.origin;
 
-  // Liste des domaines autorisés
+  // Liste des domaines autorisés (Whitelist)
   const allowedDomains = [
     'longrich.online',
     'api.longrich.online',
     'longrich-3212d.web.app',
     'longrich-3212d.firebaseapp.com',
-    'wave.com'
+    'wave.com',
+    'localhost',
+    '127.0.0.1'
   ];
-
-  // En mode développement, autoriser également les domaines locaux
-  if (isDevelopment) {
-    allowedDomains.push(
-      'localhost:5173',
-      'localhost:3000',
-      'localhost:4000',
-      'localhost:4001'
-    );
-  }
 
   // Vérifier si la requête provient d'un domaine autorisé
   // Ignorer pour les requêtes OPTIONS (pre-flight CORS)
@@ -228,24 +225,20 @@ app.use((req, res, next) => {
 // Configuration CORS
 app.use(cors({
   origin: function (origin, callback) {
-    // Liste des origines autorisées en production
+    // Liste des origines autorisées (CORS Whitelist)
     const allowedOrigins = [
       'https://longrich.online',
+      'https://www.longrich.online',
       'https://api.longrich.online',
       'https://longrich-3212d.web.app',
       'https://longrich-3212d.firebaseapp.com',
       'https://paydunya.com',
+      'http://localhost:5173',
+      'http://localhost:3000',
+      'http://localhost:4000',
+      'http://127.0.0.1:5173',
+      'http://127.0.0.1:3000'
     ];
-
-    // En mode développement, autoriser également les origines locales
-    if (isDevelopment) {
-      allowedOrigins.push(
-        'http://localhost:5173',
-        'http://localhost:3000',
-        'https://localhost:5173',
-        'https://localhost:3000'
-      );
-    }
 
     console.log('Origine de la requête:', origin);
     // Autoriser les requêtes sans origine (comme les appels API mobiles ou Postman)
@@ -719,15 +712,42 @@ app.post('/api/checkout', csrfProtection, async (req, res) => {
   try {
     console.log(`[SenePay] Traitement de la commande pour ${region}, quartier: ${sanitizedQuartier}, montant: ${amount} FCFA`);
 
-    // Utilisation de SenePay API Direct pour Wave
+    // 1. CRÉER LA COMMANDE DANS FIRESTORE (Statut initial: pending)
+    const db = admin.firestore();
+    const orderData = {
+      userId: req.body.userId || null,
+      amount,
+      currency: 'XOF',
+      status: 'pending',
+      paymentStatus: 'unpaid',
+      customerInfo: {
+        name: req.body.customerName || 'Client',
+        phone: phoneNumber,
+        region: region,
+        quartier: sanitizedQuartier
+      },
+      description: sanitizedDescription || `Commande Longrich - ${region}`,
+      items: req.body.items || [], // Liste détaillée des produits (nom, prix, quantité)
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      provider: 'senepay'
+    };
+
+    const orderDoc = await db.collection('orders').add(orderData);
+    const orderId = orderDoc.id;
+    console.log(`[Firestore] Commande créée temporairement avec l'ID: ${orderId}`);
+
+    // 2. UTILISER CET ID POUR SENEPAY
     const senepayResult = await initiateWavePayment({
       amount,
-      description: sanitizedDescription || `Commande Longrich - Région: ${region}`,
+      description: sanitizedDescription || `Commande Longrich - ID: ${orderId}`,
       customerName: `Client - ${region}`,
       customerPhone: phoneNumber,
+      orderId: orderId, // On passe l'ID Firestore réel ici
       metadata: {
         region,
-        quartier: sanitizedQuartier
+        quartier: sanitizedQuartier,
+        firestoreOrderId: orderId
       }
     });
 
@@ -735,7 +755,11 @@ app.post('/api/checkout', csrfProtection, async (req, res) => {
     console.log(`[SenePay] URL de paiement Wave générée: ${paymentUrl}`);
 
     // Renvoyer l'URL Wave directe au frontend
-    res.json({ paymentUrl });
+    res.json({ 
+      paymentUrl, 
+      orderId: orderId,
+      token: senepayResult.token 
+    });
   } catch (error) {
     console.error(`[${new Date().toISOString()}] Erreur détaillée lors du traitement du paiement:`, error);
 
