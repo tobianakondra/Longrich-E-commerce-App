@@ -234,14 +234,14 @@ class OrderService {
     };
 
     orders.forEach(order => {
-      // On compte seulement les commandes réellement payées
+      // On compte seulement les commandes réellement payées pour les stats principales
       if (order.paymentStatus === 'paid' || order.status === 'completed') {
-        stats.totalSpent += (order.total || order.amount || 0);
+        const amount = (order.total || order.amount || 0);
+        stats.totalSpent += amount;
         stats.completedOrders++;
-        stats.totalOrders++;
+        stats.totalOrders++; // Seulement les payées comptent ici désormais
       } else if (order.status === 'pending' && order.paymentStatus !== 'failed') {
         stats.pendingOrders++;
-        stats.totalOrders++;
       }
     });
 

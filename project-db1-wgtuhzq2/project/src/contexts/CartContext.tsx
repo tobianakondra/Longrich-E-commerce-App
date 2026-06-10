@@ -1,4 +1,4 @@
-import { type FC, createContext, useContext, useEffect, useState } from 'react';
+import { type FC, createContext, useContext, useEffect, useState, useRef } from 'react';
 import { CartItem, Product } from '../types';
 import { useAuth } from './AuthContext';
 import { useAdmin } from './AdminContext';
@@ -31,32 +31,52 @@ export const CartProvider: FC<{ children: React.ReactNode }> = ({ children }) =>
   const [isLoading, setIsLoading] = useState(true);
   const { currentUser } = useAuth();
   const { products: allProducts, loading: productsLoading } = useAdmin();
+  const hasLoadedRef = useRef(false);
 
-  // Charger le panier depuis Firestore (Une seule fois au montage ou changement d'ID utilisateur)
+  // Fonction utilitaire pour synchroniser un item avec le catalogue
+  const syncItemWithCatalog = (item: CartItem, catalog: Product[]): CartItem => {
+    const currentProduct = catalog.find(p => p.id === item.id);
+    if (!currentProduct) return item;
+    
+    const isBase64 = item.image?.startsWith('data:image');
+    if (item.price !== currentProduct.price || 
+        item.name !== currentProduct.name || 
+        item.image !== currentProduct.image ||
+        isBase64) {
+      return { ...currentProduct, quantity: item.quantity };
+    }
+    return item;
+  };
+
+  // Charger le panier depuis Firestore (Une seule fois au montage/login)
   useEffect(() => {
     const loadCart = async () => {
       if (!currentUser?.uid) {
         setItems([]);
         setIsLoading(false);
+        hasLoadedRef.current = false;
         return;
       }
 
+      // Si déjà chargé pour cet utilisateur, on ne recharge pas (évite d'écraser les modifs locales)
+      if (hasLoadedRef.current) return;
+
       try {
-        console.log('[Cart] Chargement initial du panier...');
+        console.log('[Cart] Chargement depuis Firestore...');
         const cartDoc = await getDoc(doc(db, 'users', currentUser.uid));
         if (cartDoc.exists() && cartDoc.data().cart) {
-          const cloudItems = cartDoc.data().cart;
+          let cloudItems = cartDoc.data().cart as CartItem[];
           
-          // Nettoyage immédiat des Base64 lors du premier chargement
-          const cleanedItems = cloudItems.map((item: any) => {
-            const catalogProduct = allProducts.find(p => p.id === item.id);
-            if (catalogProduct && item.image?.startsWith('data:image')) {
-              return { ...item, image: catalogProduct.image };
-            }
-            return item;
-          });
+          // Synchroniser immédiatement avec le catalogue si dispo
+          if (allProducts.length > 0) {
+            cloudItems = cloudItems.map(item => syncItemWithCatalog(item, allProducts));
+          }
           
-          setItems(cleanedItems);
+          setItems(cloudItems);
+          hasLoadedRef.current = true;
+        } else {
+          setItems([]);
+          hasLoadedRef.current = true;
         }
       } catch (error) {
         console.error('Erreur lors du chargement du panier:', error);
@@ -68,54 +88,18 @@ export const CartProvider: FC<{ children: React.ReactNode }> = ({ children }) =>
     if (!productsLoading) {
       loadCart();
     }
-  }, [currentUser?.uid, productsLoading]); // On ne surveille QUE l'UID, pas l'objet complet !
-
-  // Synchroniser le panier avec les données du catalogue (prix, nom, image)
-  // Et NETTOYER les anciennes images Base64
-  useEffect(() => {
-    if (!isLoading && !productsLoading && allProducts.length > 0 && items.length > 0) {
-      let hasChanges = false;
-      const syncedItems = items.map(item => {
-        const currentProduct = allProducts.find(p => p.id === item.id);
-        
-        // 1. Vérifier si l'image est un ancien format Base64
-        const isBase64 = item.image && item.image.startsWith('data:image');
-        
-        if (currentProduct) {
-          // 2. Vérifier si des données critiques ont changé ou si c'est du Base64
-          if (item.price !== currentProduct.price || 
-              item.name !== currentProduct.name || 
-              item.image !== currentProduct.image ||
-              isBase64) {
-            hasChanges = true;
-            return { ...currentProduct, quantity: item.quantity };
-          }
-        }
-        return item;
-      });
-
-      if (hasChanges) {
-        console.log('[Cart] Synchronisation des prix/images détectée');
-        setItems(syncedItems);
-        saveCart(syncedItems);
-      }
-    }
-  }, [allProducts, productsLoading, isLoading, items.length]); // Surveiller la taille du panier pour éviter les boucles infinies
+  }, [currentUser?.uid, productsLoading, allProducts]);
 
   // Sauvegarder le panier dans Firestore
-  const saveCart = async (newItems: CartItem[]) => {
+  const persistCart = async (newItems: CartItem[]) => {
     if (!currentUser) return;
-
     try {
-      // Utiliser setDoc avec merge: true pour créer le document s'il n'existe pas
       await setDoc(doc(db, 'users', currentUser.uid), {
         cart: newItems,
         updatedAt: new Date().toISOString()
       }, { merge: true });
-      
-      console.log('[Cart] Panier sauvegardé dans Firestore');
     } catch (error) {
-      console.error('Erreur lors de la sauvegarde du panier:', error);
+      console.error('Erreur persistence panier:', error);
     }
   };
 
@@ -125,17 +109,19 @@ export const CartProvider: FC<{ children: React.ReactNode }> = ({ children }) =>
       return;
     }
 
-    const newItems = [...items];
-    const existingItem = newItems.find(item => item.id === product.id);
+    setItems(prev => {
+      const newItems = [...prev];
+      const existingItem = newItems.find(item => item.id === product.id);
 
-    if (existingItem) {
-      existingItem.quantity += quantity;
-    } else {
-      newItems.push({ ...product, quantity });
-    }
-
-    setItems(newItems);
-    await saveCart(newItems);
+      if (existingItem) {
+        existingItem.quantity += quantity;
+      } else {
+        newItems.push({ ...product, quantity });
+      }
+      
+      persistCart(newItems);
+      return newItems;
+    });
   };
 
   const removeFromCart = async (productId: string, onAuthRequired: () => void) => {
@@ -144,9 +130,11 @@ export const CartProvider: FC<{ children: React.ReactNode }> = ({ children }) =>
       return;
     }
 
-    const newItems = items.filter(item => item.id !== productId);
-    setItems(newItems);
-    await saveCart(newItems);
+    setItems(prev => {
+      const newItems = prev.filter(item => item.id !== productId);
+      persistCart(newItems);
+      return newItems;
+    });
   };
 
   const updateQuantity = async (productId: string, quantity: number, onAuthRequired: () => void) => {
@@ -155,24 +143,24 @@ export const CartProvider: FC<{ children: React.ReactNode }> = ({ children }) =>
       return;
     }
 
-    if (quantity <= 0) {
-      await removeFromCart(productId, onAuthRequired);
-      return;
-    }
-
-    const newItems = items.map(item =>
-      item.id === productId ? { ...item, quantity } : item
-    );
-
-    setItems(newItems);
-    await saveCart(newItems);
+    setItems(prev => {
+      if (quantity <= 0) {
+        const newItems = prev.filter(item => item.id !== productId);
+        persistCart(newItems);
+        return newItems;
+      }
+      const newItems = prev.map(item =>
+        item.id === productId ? { ...item, quantity } : item
+      );
+      persistCart(newItems);
+      return newItems;
+    });
   };
 
   const clearCart = async () => {
     if (!currentUser) return;
-
     setItems([]);
-    await saveCart([]);
+    await persistCart([]);
   };
 
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
@@ -191,11 +179,9 @@ export const CartProvider: FC<{ children: React.ReactNode }> = ({ children }) =>
 
   if (isLoading) {
     return (
-      <CartContext.Provider value={value}>
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
-        </div>
-      </CartContext.Provider>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
+      </div>
     );
   }
 

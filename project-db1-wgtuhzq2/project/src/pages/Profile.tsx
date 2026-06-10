@@ -15,7 +15,8 @@ import {
   Phone,
   Check,
   AlertCircle,
-  Loader2
+  Loader2,
+  ArrowRight
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
@@ -695,34 +696,70 @@ export const Profile: FC = () => {
                         </div>
                       </div>
 
-                      <div className="text-sm text-gray-600">
-                        <p className="mb-1 font-medium">
-                          {Array.isArray(order.items)
-                            ? `${order.items.length} produit(s)`
-                            : 'Commande de produits'
-                          }
-                        </p>
-                        <div className="flex flex-wrap gap-2 mt-2">
-                          {Array.isArray(order.items) && order.items.slice(0, 5).map((item: any, idx: number) => (
-                            <span key={idx} className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-[10px]">
-                              {item.name} {item.quantity > 1 ? `(x${item.quantity})` : ''}
-                            </span>
+                      <div className="flex items-start space-x-4">
+                        {/* Stack d'images des produits */}
+                        <div className="relative flex-shrink-0 w-16 h-16 mr-2">
+                          {Array.isArray(order.items) && order.items.slice(0, 3).map((item: any, idx: number) => (
+                            <div 
+                              key={idx}
+                              className="absolute top-0 border-2 border-white rounded-lg overflow-hidden shadow-sm transition-transform hover:scale-110"
+                              style={{ 
+                                left: `${idx * 12}px`, 
+                                zIndex: 10 - idx,
+                                width: '48px',
+                                height: '48px'
+                              }}
+                            >
+                              <img 
+                                src={item.image} 
+                                alt={item.name} 
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
                           ))}
-                          {Array.isArray(order.items) && order.items.length > 5 && (
-                            <span className="text-[10px] text-gray-400 self-center">
-                              +{order.items.length - 5} autres
-                            </span>
+                          {Array.isArray(order.items) && order.items.length > 3 && (
+                            <div 
+                              className="absolute bottom-0 right-0 bg-purple-600 text-white text-[10px] font-bold w-6 h-6 rounded-full flex items-center justify-center border-2 border-white z-20 shadow-sm"
+                              style={{ transform: 'translate(20%, 20%)' }}
+                            >
+                              +{order.items.length - 3}
+                            </div>
                           )}
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          <p className="mb-1 font-medium text-gray-900 truncate">
+                            {Array.isArray(order.items)
+                              ? order.items.map(item => item.name).join(', ')
+                              : 'Commande de produits'
+                            }
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
+                              {Array.isArray(order.items) 
+                                ? `${order.items.reduce((acc: number, item: any) => acc + (item.quantity || 1), 0)} article(s)`
+                                : '1 article'
+                              }
+                            </span>
+                          </div>
                         </div>
                       </div>
 
-                      <div className="mt-4 flex space-x-2 border-t pt-3">
+                      <div className="mt-4 flex items-center justify-between border-t pt-3">
                         <button 
                           onClick={() => navigate(`/order-success/${order.id}`)}
-                          className="text-purple-600 hover:text-purple-700 text-xs font-bold uppercase tracking-wider"
+                          className="text-purple-600 hover:text-purple-700 text-xs font-bold uppercase tracking-wider flex items-center"
                         >
                           Voir le reçu
+                          <ArrowRight className="ml-1 w-3 h-3" />
                         </button>
+                        
+                        <div className="text-right">
+                          <p className="text-[10px] text-gray-400 uppercase tracking-tighter">Moyen de paiement</p>
+                          <p className="text-xs font-medium text-gray-600">
+                            {order.paymentMethod === 'wave_senepay' ? 'Wave' : order.paymentMethod}
+                          </p>
+                        </div>
                       </div>
                     </div>
                   ))}
