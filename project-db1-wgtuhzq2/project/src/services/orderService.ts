@@ -89,6 +89,36 @@ class OrderService {
   }
 
   /**
+   * Récupérer TOUTES les commandes (Admin uniquement)
+   */
+  async getAllOrders(): Promise<Order[]> {
+    try {
+      console.log('[OrderService] Récupération de toutes les commandes (Admin)...');
+      
+      const ordersRef = collection(db, 'orders');
+      const q = query(ordersRef, orderBy('createdAt', 'desc'));
+      
+      const querySnapshot = await getDocs(q);
+      const orders: Order[] = [];
+      
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        orders.push({
+          id: doc.id,
+          ...data,
+          total: data.total || data.amount || 0,
+          date: data.date || (data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : new Date().toISOString())
+        } as Order);
+      });
+      
+      return orders;
+    } catch (error) {
+      console.error('[OrderService] Erreur lors de la récupération globale:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Ancienne méthode de récupération (depuis le document utilisateur)
    */
   private async getOldUserOrders(userId: string): Promise<Order[]> {

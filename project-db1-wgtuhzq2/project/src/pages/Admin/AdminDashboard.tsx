@@ -10,7 +10,8 @@ import {
   Lock,
   AlertCircle,
   Shield,
-  MessageCircle
+  MessageCircle,
+  ShoppingBag
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
@@ -21,13 +22,14 @@ import { FeaturedProductsManager } from '../../components/Admin/FeaturedProductM
 import { SpecialOffersManager } from '../../components/Admin/SpecialOffersManager';
 import { AdminSecuritySettings } from './AdminSecuritySettings';
 import { ReviewManagement } from '../../components/Admin/ReviewManagement';
+import { OrderManagement } from '../../components/Admin/OrderManagement';
 import { doc, getDoc, updateDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { AccessLog } from '../../types';
 import { checkAdminStatus } from '../../utils/setupAdmin';
 import { formatPrice } from '../../utils/formatters';
 
-type AdminTab = 'overview' | 'products' | 'add-product' | 'featured' | 'offers' | 'reviews' | 'security';
+type AdminTab = 'overview' | 'products' | 'add-product' | 'featured' | 'offers' | 'reviews' | 'orders' | 'security';
 
 const MAX_FAILED_ATTEMPTS = 3;
 const LOCKOUT_TIME_MINUTES = 15;
@@ -237,6 +239,7 @@ export const AdminDashboard: React.FC = () => {
 
   const tabs = [
     { id: 'overview', label: 'Dashboard', icon: TrendingUp },
+    { id: 'orders', label: 'Commandes', icon: ShoppingBag },
     { id: 'products', label: 'Produits', icon: Package },
     { id: 'add-product', label: 'Ajouter', icon: Plus },
     { id: 'featured', label: 'Vedettes', icon: Star },
@@ -307,6 +310,7 @@ export const AdminDashboard: React.FC = () => {
           </div>
         )}
 
+        {activeTab === 'orders' && <OrderManagement />}
         {activeTab === 'products' && <ProductManagement />}
         {activeTab === 'add-product' && <AddProductForm />}
         {activeTab === 'featured' && <FeaturedProductsManager />}
