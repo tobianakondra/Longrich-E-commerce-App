@@ -27,23 +27,32 @@ sudo npm install -g pm2
 
 ## 3. Le Bouclier Nginx (Sécurité Niveau 1)
 
-Le fichier `/etc/nginx/sites-available/longrich` agit comme un pare-feu applicatif. Il est configuré pour :
-1.  **Forcer le HTTPS** via Let's Encrypt.
-2.  **Restreindre l'Origin :** Seul le site `longrich.online` et les domaines Firebase associés sont autorisés à appeler l'API.
-3.  **Autoriser les outils de dev :** Les adresses `localhost` et `127.0.0.1` (avec tous les ports) sont incluses dans la whitelist pour permettre le développement local sans blocage.
-4.  **Protection CORS :** Toute requête provenant d'un domaine tiers (hacker) est rejetée avec une erreur 403 avant même d'atteindre Node.js.
+Le fichier `/etc/nginx/sites-available/longrich` agit comme un pare-feu applicatif. Il est configuré en mode **Hybride**.
 
-### Configuration de la Whitelist (Regex Nginx)
+### 🛠️ Gestion du Mode Développement (Localhost)
+
+#### 1. Comment ACTIVER le mode Dev
+Pour permettre à votre ordinateur local de communiquer avec l'API en ligne :
+*   **Dans Nginx :** Vérifiez que la regex inclut `localhost|127\.0\.0\.1`.
 ```nginx
 if ($http_origin ~* "^https?://(longrich\.online|www\.longrich\.online|longrich-3212d\.web\.app|longrich-3212d\.firebaseapp\.com|localhost|127\.0\.0\.1)(:[0-9]+)?$") {
     set $allowed_origin 1;
 }
 ```
+*   **Dans Cloudflare :** Passez impérativement le sous-domaine `api` en **Nuage Gris** (DNS Only).
+*   **Note technique :** Nginx ne doit **pas** ajouter de headers `Access-Control-Allow-Origin`, car Node.js s'en occupe déjà via le middleware CORS. Nginx sert uniquement à rejeter (403) les domaines non listés.
+
+#### 2. Comment DÉSACTIVER le mode Dev (Passage en PROD totale)
+Pour verrouiller le serveur avant le lancement officiel :
+1.  Éditez `/etc/nginx/sites-available/longrich`.
+2.  Supprimez `|localhost|127\.0\.0\.1` de la regex ci-dessus.
+3.  Réactivez le **Nuage Orange** sur Cloudflare.
+4.  Relancez Nginx : `sudo systemctl restart nginx`.
+5.  (Optionnel) Retirez aussi `localhost` des listes dans `server.js` pour un double verrouillage.
 
 ### Commandes utiles (Rafraîchir Nginx)
 *   **Vérifier la syntaxe :** `sudo nginx -t`
 *   **Appliquer les changements :** `sudo systemctl restart nginx`
-*   **Recharger sans couper :** `sudo systemctl reload nginx`
 *   **Renouveler SSL :** `sudo certbot --nginx -d api.longrich.online`
 
 ---
@@ -63,16 +72,9 @@ const allowedDomains = [
   'localhost',  // <--- INDISPENSABLE pour le dev local
   '127.0.0.1'   // <--- INDISPENSABLE pour le dev local
 ];
-
-const allowedOrigins = [
-  'https://longrich.online',
-  // ... autres origins ...
-  'http://localhost:5173', // <--- Pour le dev (Vite)
-  'http://localhost:3000'  // <--- Pour le dev (React)
-];
 ```
 
-**⚠️ AVERTISSEMENT DE SÉCURITÉ :** N'oubliez jamais de retirer `localhost` et `127.0.0.1` de vos whitelists (Nginx et Node.js) une fois vos tests terminés. Garder ces adresses autorisées en production finale constitue un risque de sécurité, car cela pourrait permettre à des scripts malveillants exécutés localement par un attaquant d'interagir avec votre API.
+**⚠️ AVERTISSEMENT DE SÉCURITÉ :** N'oubliez jamais de retirer `localhost` et `127.0.0.1` de vos whitelists (Nginx et Node.js) avant le lancement officiel. Garder ces adresses autorisées constitue un risque si un attaquant parvient à exécuter des scripts sur votre machine locale.
 
 ---
 
@@ -85,7 +87,7 @@ Le serveur tourne en continu grâce à PM2.
 
 ---
 
-## 5. Intégration Firebase Admin
+## 6. Intégration Firebase Admin
 
 Le serveur utilise le SDK Admin pour mettre à jour les commandes dans Firestore.
 *   **Fichier critique :** `longrich-3212d-7b2897d075b7.json`.
@@ -94,7 +96,7 @@ Le serveur utilise le SDK Admin pour mettre à jour les commandes dans Firestore
 
 ---
 
-## 6. Flux de Paiement SenePay (API Direct)
+## 7. Flux de Paiement SenePay (API Direct)
 
 Nous avons migré de PayDunya vers SenePay en utilisant le flux **API Direct**.
 1.  **Initiation :** L'API renvoie une `redirectUrl` Wave officielle.
@@ -104,7 +106,7 @@ Nous avons migré de PayDunya vers SenePay en utilisant le flux **API Direct**.
 
 ---
 
-## 7. Maintenance et Logs
+## 8. Maintenance et Logs
 
 *   **Logs en temps réel :** `pm2 logs longrich-api`
 *   **Variables d'env :** Gérées via un fichier `.env` local au VPS (jamais sur Git).
@@ -114,6 +116,23 @@ Nous avons migré de PayDunya vers SenePay en utilisant le flux **API Direct**.
     npm install --production
     pm2 restart longrich-api
     ```
+
+---
+
+## 9. Prochaines Étapes de Sécurisation (Backlog)
+
+Pour atteindre un niveau de sécurité "Forteresse", les évolutions suivantes sont prévues :
+
+### A. Verrouillage IP du Pare-feu (UFW)
+Actuellement, le serveur accepte les connexions sur le port 443 de n'importe quelle adresse IP. La prochaine étape consiste à configurer le pare-feu du VPS pour qu'il rejette tout trafic web ne provenant pas des **IP officielles de Cloudflare**.
+*   **Objectif :** Rendre le serveur invisible aux scans (Nmap) et empêcher le contournement des règles de sécurité de Cloudflare.
+*   **Précautions :** Garder le port 22 (SSH) ouvert avec authentification par clé uniquement pour éviter le verrouillage accidentel (Lockout).
+
+### B. Automatisation des mises à jour d'IP
+Mettre en place un script cron qui récupère périodiquement la liste à jour des IPs Cloudflare (https://www.cloudflare.com/ips-v4) et met à jour les règles UFW automatiquement.
+
+### C. Monitoring et Alertes
+Installer un outil comme **Fail2Ban** pour bannir automatiquement les IPs qui tentent de forcer l'accès SSH ou qui scannent des répertoires interdits.
 
 ---
 

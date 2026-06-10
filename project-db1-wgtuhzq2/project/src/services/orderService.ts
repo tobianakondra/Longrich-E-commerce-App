@@ -8,7 +8,12 @@ import {
   updateDoc, 
   arrayUnion, 
   arrayRemove,
-  Timestamp 
+  Timestamp,
+  collection,
+  query,
+  where,
+  getDocs,
+  orderBy
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 
@@ -16,10 +21,12 @@ export interface Order {
   id: string;
   date: string;
   status: 'pending' | 'completed' | 'cancelled' | 'failed';
+  paymentStatus?: 'unpaid' | 'paid' | 'failed';
   total: number;
-  items: number;
+  amount?: number;
+  items: any[] | number;
   products: string[];
-  paymentMethod: 'wave' | 'card' | 'cash';
+  paymentMethod: 'wave' | 'card' | 'cash' | 'wave_senepay';
   customerInfo: {
     name: string;
     phone: string;
@@ -30,8 +37,9 @@ export interface Order {
     token: string;
     receiptUrl?: string;
   };
-  createdAt: string;
-  updatedAt: string;
+  createdAt: any;
+  updatedAt: any;
+  userId?: string;
 }
 
 export interface OrderStats {
@@ -43,33 +51,58 @@ export interface OrderStats {
 
 class OrderService {
   /**
-   * Récupérer les commandes d'un utilisateur depuis Firestore
+   * Récupérer les commandes d'un utilisateur depuis Firestore (Collection globale)
    */
   async getUserOrders(userId: string): Promise<Order[]> {
     try {
       console.log(`[OrderService] Récupération des commandes pour l'utilisateur: ${userId}`);
       
-      const userDocRef = doc(db, 'users', userId);
-      const userDoc = await getDoc(userDocRef);
+      const ordersRef = collection(db, 'orders');
+      const q = query(
+        ordersRef, 
+        where('userId', '==', userId),
+        orderBy('createdAt', 'desc')
+      );
       
-      if (!userDoc.exists()) {
-        console.log(`[OrderService] Document utilisateur non trouvé: ${userId}`);
-        return [];
-      }
+      const querySnapshot = await getDocs(q);
+      const orders: Order[] = [];
       
-      const userData = userDoc.data();
-      const orders = userData.orders || [];
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        orders.push({
+          id: doc.id,
+          ...data,
+          // Harmonisation des champs entre les anciennes et nouvelles versions
+          total: data.total || data.amount || 0,
+          date: data.date || (data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : new Date().toISOString())
+        } as Order);
+      });
       
       console.log(`[OrderService] ${orders.length} commandes trouvées`);
-      
-      // Trier les commandes par date (plus récentes en premier)
-      return orders.sort((a: Order, b: Order) => 
-        new Date(b.date).getTime() - new Date(a.date).getTime()
-      );
+      return orders;
       
     } catch (error) {
       console.error('[OrderService] Erreur lors de la récupération des commandes:', error);
-      throw error;
+      // Fallback: essayer l'ancienne méthode si l'index n'est pas encore prêt
+      return this.getOldUserOrders(userId);
+    }
+  }
+
+  /**
+   * Ancienne méthode de récupération (depuis le document utilisateur)
+   */
+  private async getOldUserOrders(userId: string): Promise<Order[]> {
+    try {
+      const userDocRef = doc(db, 'users', userId);
+      const userDoc = await getDoc(userDocRef);
+      if (!userDoc.exists()) return [];
+      const userData = userDoc.data();
+      return (userData.orders || []).map((o: any) => ({
+        ...o,
+        total: o.total || o.amount || 0
+      })).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    } catch (e) {
+      return [];
     }
   }
 
@@ -194,19 +227,21 @@ class OrderService {
    */
   calculateOrderStats(orders: Order[]): OrderStats {
     const stats: OrderStats = {
-      totalOrders: orders.length,
+      totalOrders: 0,
       totalSpent: 0,
       completedOrders: 0,
       pendingOrders: 0
     };
 
     orders.forEach(order => {
-      // Compter seulement les commandes complétées dans le total dépensé
-      if (order.status === 'completed') {
-        stats.totalSpent += order.total;
+      // On compte seulement les commandes réellement payées
+      if (order.paymentStatus === 'paid' || order.status === 'completed') {
+        stats.totalSpent += (order.total || order.amount || 0);
         stats.completedOrders++;
-      } else if (order.status === 'pending') {
+        stats.totalOrders++;
+      } else if (order.status === 'pending' && order.paymentStatus !== 'failed') {
         stats.pendingOrders++;
+        stats.totalOrders++;
       }
     });
 

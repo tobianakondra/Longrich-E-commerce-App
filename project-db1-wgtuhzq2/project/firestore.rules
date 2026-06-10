@@ -25,8 +25,13 @@ service cloud.firestore {
     
     // RÈGLES POUR LES COMMANDES
     match /orders/{orderId} {
-      allow read: if request.auth != null && (resource.data.userId == request.auth.uid || isAdmin());
-      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      // get: autorise la lecture d'un document seul si on connaît son ID (Page Succès)
+      allow get: if true; 
+      
+      // list: autorise la recherche/lecture de plusieurs documents (Admin uniquement)
+      allow list: if isAdmin() || (request.auth != null && resource.data.userId == request.auth.uid);
+      
+      allow create: if true; // Création par le backend
       allow update: if isAdmin();
       allow delete: if isAdmin();
     }

@@ -25,11 +25,13 @@ if (!SENEPAY_API_KEY || !SENEPAY_API_SECRET) {
  * @param {string} paymentData.customerPhone - Téléphone client (+221...)
  * @param {string} paymentData.orderId - Référence de commande
  * @param {string} paymentData.customerName - Nom du client (optionnel)
+ * @param {string} paymentData.operator - Opérateur (wave, orange, etc.)
  * @returns {Promise<Object>} - Réponse de l'API SenePay
  */
-export async function initiateWavePayment(paymentData) {
+export async function initiateSenePayPayment(paymentData) {
   try {
-    console.log(`[SenePay] Initialisation d'un paiement Wave pour ${paymentData.amount} FCFA`);
+    const operator = paymentData.operator || 'wave';
+    console.log(`[SenePay] Initialisation d'un paiement ${operator} pour ${paymentData.amount} FCFA`);
 
     const response = await fetch(`${BASE_URL}/api/v1/payments/initiate`, {
       method: 'POST',
@@ -42,7 +44,7 @@ export async function initiateWavePayment(paymentData) {
         amount: paymentData.amount,
         currency: 'XOF',
         countryCode: 'SN',
-        operator: 'wave',
+        operator: operator,
         customerPhone: paymentData.customerPhone,
         customerName: paymentData.customerName || 'Client Longrich',
         orderId: paymentData.orderId,
@@ -97,5 +99,5 @@ export async function initiateWavePayment(paymentData) {
 }
 
 export default {
-  initiateWavePayment
+  initiateSenePayPayment
 };

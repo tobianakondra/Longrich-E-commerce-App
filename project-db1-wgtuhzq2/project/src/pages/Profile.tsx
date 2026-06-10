@@ -54,7 +54,10 @@ export const Profile: FC = () => {
   });
 
   // Utilisation du hook pour récupérer l'historique des commandes depuis Firestore avec SSE
-  const { orders: orderHistory, loading: ordersLoading, stats } = useOrderHistory();
+  const { orders: allOrders, loading: ordersLoading, stats } = useOrderHistory();
+
+  // Filtrer pour n'afficher que les commandes payées dans l'historique
+  const orderHistory = allOrders.filter(order => order.paymentStatus === 'paid' || order.status === 'completed');
 
   const handleLogout = async () => {
     try {
@@ -260,16 +263,34 @@ export const Profile: FC = () => {
     }
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: string, paymentStatus?: string) => {
+    if (paymentStatus === 'paid' || status === 'completed') {
+      return 'bg-green-100 text-green-800';
+    }
     switch (status) {
-      case 'Livré':
-        return 'bg-green-100 text-green-800';
-      case 'En cours':
+      case 'pending':
         return 'bg-blue-100 text-blue-800';
-      case 'Annulé':
+      case 'failed':
+      case 'cancelled':
         return 'bg-red-100 text-red-800';
       default:
         return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getStatusLabel = (status: string, paymentStatus?: string) => {
+    if (paymentStatus === 'paid' || status === 'completed') {
+      return 'Payé & Confirmé';
+    }
+    switch (status) {
+      case 'pending':
+        return 'En attente';
+      case 'failed':
+        return 'Échoué';
+      case 'cancelled':
+        return 'Annulé';
+      default:
+        return status;
     }
   };
 
@@ -656,9 +677,11 @@ export const Profile: FC = () => {
                     <div key={order.id} className="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors">
                       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-3">
                         <div className="flex items-center space-x-3 mb-2 md:mb-0">
-                          <span className="font-semibold text-gray-900">#{order.id}</span>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
-                            {order.status}
+                          <span className="font-mono font-bold text-purple-600 bg-purple-50 px-2 py-1 rounded">
+                            #{order.id.slice(-6).toUpperCase()}
+                          </span>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(order.status, order.paymentStatus)}`}>
+                            {getStatusLabel(order.status, order.paymentStatus)}
                           </span>
                         </div>
                         <div className="flex items-center space-x-4 text-sm text-gray-600">
@@ -667,35 +690,39 @@ export const Profile: FC = () => {
                             <span>{formatOrderDate(order.createdAt)}</span>
                           </div>
                           <span className="font-semibold text-gray-900">
-                            {formatPrice(order.total)} FCFA
+                            {formatPrice(order.total || order.amount || 0)} FCFA
                           </span>
                         </div>
                       </div>
 
                       <div className="text-sm text-gray-600">
-                        <p className="mb-1">
+                        <p className="mb-1 font-medium">
                           {Array.isArray(order.items)
-                            ? `${order.items.length} article${order.items.length > 1 ? 's' : ''}`
-                            : `${order.items || 0} article${(order.items || 0) > 1 ? 's' : ''}`
+                            ? `${order.items.length} produit(s)`
+                            : 'Commande de produits'
                           }
                         </p>
-                        <p className="text-xs">
-                          {Array.isArray(order.items)
-                            ? order.items.map(item => item.name).join(', ')
-                            : 'Détails non disponibles'
-                          }
-                        </p>
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {Array.isArray(order.items) && order.items.slice(0, 5).map((item: any, idx: number) => (
+                            <span key={idx} className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-[10px]">
+                              {item.name} {item.quantity > 1 ? `(x${item.quantity})` : ''}
+                            </span>
+                          ))}
+                          {Array.isArray(order.items) && order.items.length > 5 && (
+                            <span className="text-[10px] text-gray-400 self-center">
+                              +{order.items.length - 5} autres
+                            </span>
+                          )}
+                        </div>
                       </div>
 
-                      <div className="mt-3 flex space-x-2">
-                        <button className="text-purple-600 hover:text-purple-700 text-sm font-medium">
-                          Voir détails
+                      <div className="mt-4 flex space-x-2 border-t pt-3">
+                        <button 
+                          onClick={() => navigate(`/order-success/${order.id}`)}
+                          className="text-purple-600 hover:text-purple-700 text-xs font-bold uppercase tracking-wider"
+                        >
+                          Voir le reçu
                         </button>
-                        {order.status === 'completed' && (
-                          <button className="text-green-600 hover:text-green-700 text-sm font-medium">
-                            Racheter
-                          </button>
-                        )}
                       </div>
                     </div>
                   ))}

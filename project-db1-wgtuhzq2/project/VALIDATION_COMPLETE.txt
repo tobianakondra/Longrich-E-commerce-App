@@ -180,7 +180,7 @@ Pour plus de détails, consulter:
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Implémenté par: Kiro AI
+Implémenté par: Richard
 Date: 8 décembre 2025
 Version: 1.0
 

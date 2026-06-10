@@ -23,8 +23,8 @@ Longrich n'est pas seulement une boutique en ligne ; c'est un écosystème basé
 
 ### 🖼️ Gestion des Médias
 *   **Optimisation Uploadcare :** Migration totale des images Base64 vers un CDN professionnel.
-*   **Upload Différé :** Prévisualisation locale instantanée et envoi au cloud uniquement lors de la validation finale (économie de stockage).
-*   **Format de Nouvelle Génération :** Service automatique des images en format WebP pour une rapidité maximale.
+*   **Auto-Healing des données :** Nettoyage automatique des anciens paniers contenant du Base64, remplacé dynamiquement par les URLs CDN lors de la consultation.
+*   **Upload Différé :** Prévisualisation locale instantanée et envoi au cloud uniquement lors de la validation finale.
 
 ---
 

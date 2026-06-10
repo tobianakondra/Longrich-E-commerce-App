@@ -19,6 +19,7 @@ interface FormData {
   phoneNumber: string;
   region: string;
   quartier: string;
+  paymentMethod: 'wave' | 'orange_money';
 }
 
 const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, initialSmsConfig = null }) => {
@@ -30,7 +31,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, initialS
   const [formData, setFormData] = useState<FormData>({
     phoneNumber: currentUser?.phone || '',
     region: '',
-    quartier: ''
+    quartier: '',
+    paymentMethod: 'wave'
   });
   const [regions, setRegions] = useState<string[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
@@ -318,6 +320,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, initialS
           phoneNumber: cleanedPhone, // Utiliser le numéro nettoyé
           region: formData.region,
           quartier: formData.quartier,
+          paymentMethod: formData.paymentMethod,
           amount: totalPrice,
           customerName: currentUser?.displayName || 'Client',
           userId: currentUser?.uid,
@@ -450,7 +453,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, initialS
           <form onSubmit={handleSubmit}>
             <div className="mb-4">
               <label htmlFor="phoneNumber" className="block text-gray-700 font-medium mb-2">
-                Numéro de téléphone (Wave)
+                Numéro de téléphone (Wave ou Orange Money)
               </label>
               <div className="flex">
                 <input
@@ -494,6 +497,54 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, initialS
               {smsConfig && !smsConfig.smsEnabled && (
                 <p className="text-xs text-blue-500 mt-1">Mode vérification SMS désactivé - validation automatique</p>
               )}
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-gray-700 font-medium mb-3">
+                Moyen de paiement
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                {/* Option Wave */}
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, paymentMethod: 'wave' })}
+                  className={`relative flex flex-col items-center justify-center p-3 border-2 rounded-xl transition-all ${
+                    formData.paymentMethod === 'wave'
+                      ? 'border-purple-600 bg-purple-50'
+                      : 'border-gray-200 hover:border-purple-200'
+                  }`}
+                  disabled={loading}
+                >
+                  <img src="/wave-logo.png" alt="Wave" className="w-12 h-12 object-contain mb-2" />
+                  <span className={`text-xs font-bold ${formData.paymentMethod === 'wave' ? 'text-purple-700' : 'text-gray-500'}`}>
+                    Wave
+                  </span>
+                  {formData.paymentMethod === 'wave' && (
+                    <div className="absolute -top-2 -right-2 bg-purple-600 text-white rounded-full p-1 shadow-sm">
+                      <Check className="w-3 h-3" />
+                    </div>
+                  )}
+                </button>
+
+                {/* Option Orange Money (Désactivée) */}
+                <div className="relative group">
+                  <button
+                    type="button"
+                    className="w-full flex flex-col items-center justify-center p-3 border-2 border-gray-100 rounded-xl bg-gray-50 opacity-60 cursor-not-allowed filter grayscale"
+                    disabled={true}
+                  >
+                    <img src="/orange-money-logo.png" alt="Orange Money" className="w-12 h-12 object-contain mb-2" />
+                    <span className="text-xs font-bold text-gray-400">
+                      Orange Money
+                    </span>
+                  </button>
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                    <span className="bg-gray-800 text-white text-[10px] px-2 py-1 rounded shadow-lg text-center leading-tight">
+                      En cours d'intégration
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div className="mb-4">

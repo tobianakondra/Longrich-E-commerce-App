@@ -64,4 +64,16 @@ Le mode Debug permet de contourner reCAPTCHA pour les tests ou en cas de blocage
 
 ---
 
-*Document généré le 6 Juin 2026 pour l'équipe technique Longrich.*
+## 5. Intégrité des Données et Performance
+
+### Stratégie "Auto-Healing" du Panier
+Le projet a migré du stockage d'images en **Base64** (lourd et lent) vers des **URLs CDN Uploadcare**. 
+
+Pour garantir une transition invisible pour les anciens utilisateurs :
+*   **Nettoyage Dynamique :** Le `CartContext.tsx` contient une logique qui détecte les chaînes `data:image/...` dans le panier de l'utilisateur lors de sa connexion.
+*   **Synchronisation :** Ces données obsolètes sont immédiatement remplacées par les URLs du catalogue officiel et sauvegardées dans Firestore.
+*   **Bénéfice :** Cette approche évite de charger des documents Firestore de plusieurs mégaoctets et garantit que les images s'affichent toujours, même si le format de stockage change.
+
+---
+
+*Document généré le 9 Juin 2026 pour l'équipe technique Longrich.*

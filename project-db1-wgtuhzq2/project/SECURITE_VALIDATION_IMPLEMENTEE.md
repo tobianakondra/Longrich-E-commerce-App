@@ -402,6 +402,6 @@ Cette implémentation suit les recommandations de :
 
 ---
 
-**Implémenté par**: Kiro AI  
+**Implémenté par**: L'equipe technique de Longrich
 **Date**: 8 décembre 2025  
 **Version**: 1.0

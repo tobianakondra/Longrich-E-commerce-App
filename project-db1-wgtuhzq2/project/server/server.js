@@ -10,7 +10,7 @@ import morgan from 'morgan';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import { createWavePayment, checkPaymentStatus } from './services/paymentService.js';
-import { initiateWavePayment } from './services/senepayService.js';
+import { initiateSenePayPayment } from './services/senepayService.js';
 import fetch from 'node-fetch';
 import twilio from 'twilio';
 import https from 'https';
@@ -667,12 +667,15 @@ import {
 
 // Endpoint de checkout sécurisé
 app.post('/api/checkout', csrfProtection, async (req, res) => {
-  const { phoneNumber, region, quartier, amount, description } = req.body;
+  const { phoneNumber, region, quartier, amount, description, paymentMethod } = req.body;
 
   // Validation des données
   if (!phoneNumber || !region || !quartier || !amount) {
     return res.status(400).json({ error: 'Données de formulaire incomplètes' });
   }
+
+  // Mapper le paymentMethod vers l'opérateur SenePay
+  const operator = paymentMethod === 'orange_money' ? 'orange' : 'wave';
 
   // Sanitiser les entrées
   const sanitizedQuartier = sanitizeString(quartier, 100);
@@ -710,7 +713,7 @@ app.post('/api/checkout', csrfProtection, async (req, res) => {
   }
 
   try {
-    console.log(`[SenePay] Traitement de la commande pour ${region}, quartier: ${sanitizedQuartier}, montant: ${amount} FCFA`);
+    console.log(`[SenePay] Traitement de la commande pour ${region}, quartier: ${sanitizedQuartier}, montant: ${amount} FCFA, opérateur: ${operator}`);
 
     // 1. CRÉER LA COMMANDE DANS FIRESTORE (Statut initial: pending)
     const db = admin.firestore();
@@ -730,7 +733,8 @@ app.post('/api/checkout', csrfProtection, async (req, res) => {
       items: req.body.items || [], // Liste détaillée des produits (nom, prix, quantité)
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-      provider: 'senepay'
+      provider: 'senepay',
+      operator: operator
     };
 
     const orderDoc = await db.collection('orders').add(orderData);
@@ -738,10 +742,11 @@ app.post('/api/checkout', csrfProtection, async (req, res) => {
     console.log(`[Firestore] Commande créée temporairement avec l'ID: ${orderId}`);
 
     // 2. UTILISER CET ID POUR SENEPAY
-    const senepayResult = await initiateWavePayment({
+    const senepayResult = await initiateSenePayPayment({
       amount,
+      operator: operator,
       description: sanitizedDescription || `Commande Longrich - ID: ${orderId}`,
-      customerName: `Client - ${region}`,
+      customerName: req.body.customerName || `Client - ${region}`,
       customerPhone: phoneNumber,
       orderId: orderId, // On passe l'ID Firestore réel ici
       metadata: {

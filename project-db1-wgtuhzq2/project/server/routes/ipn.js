@@ -61,33 +61,66 @@ router.post('/senepay-ipn', async (req, res) => {
   // Signature valide, on répond 200 immédiatement pour libérer SenePay
   res.status(200).send('OK');
 
+  console.log('[SenePay IPN] Payload reçu:', JSON.stringify(req.body));
+
   // 2. Traitement asynchrone (en arrière-plan)
-  const { orderReference, status, transactionId, amount, customerPhone } = req.body;
+  // SenePay peut varier les noms des champs (camelCase vs snake_case)
+  const orderReference = req.body.orderReference || req.body.orderId || req.body.order_id || req.body.externalId || req.body.external_id;
+  const status = req.body.status;
+  const transactionId = req.body.transactionId || req.body.transaction_id || req.body.internalId || req.body.internal_id;
+  const amount = req.body.amount || req.body.net_amount || req.body.netAmount;
+  const customerPhone = req.body.customerPhone || req.body.phone || req.body.phoneNumber || req.body.customer_phone;
   
-  if (status !== 'Complete') {
-    console.log(`[SenePay IPN] Commande ${orderReference} ignorer (Statut: ${status})`);
+  if (!orderReference) {
+    console.error('[SenePay IPN] Erreur: orderReference (ou order_id) manquant dans le payload');
     return;
   }
+
+  // Déterminer si le paiement a réussi ou échoué
+  const isSuccessful = status === 'Complete' || status === 'Completed' || status === 'SUCCESS' || status === 'Success';
+  const isFailed = status === 'Failed' || status === 'FAILED' || status === 'Cancelled';
 
   try {
     const db = admin.firestore();
     const orderRef = db.collection('orders').doc(orderReference);
 
-    // 🔥 GESTION DE L'IDEMPOTENCE
+    // Vérifier l'existence de la commande
     const orderDoc = await orderRef.get();
-    
     if (!orderDoc.exists) {
       console.warn(`[SenePay IPN] Commande ${orderReference} introuvable dans Firestore`);
       return;
     }
 
     const orderData = orderDoc.data();
+
+    // Si le paiement a échoué
+    if (isFailed) {
+      console.log(`[SenePay IPN] Commande ${orderReference} marquée comme ÉCHOUÉE (Statut SenePay: ${status})`);
+      await orderRef.update({
+        status: 'failed',
+        paymentStatus: 'failed',
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        paymentData: {
+          transactionId: transactionId || 'N/A',
+          reason: req.body.failed_reason || 'Paiement annulé ou refusé',
+          provider: 'senepay'
+        }
+      });
+      return;
+    }
+
+    if (!isSuccessful) {
+      console.log(`[SenePay IPN] Commande ${orderReference} ignorée (Statut inconnu: ${status})`);
+      return;
+    }
+
+    // GESTION DE LA RÉUSSITE
     if (orderData.paymentStatus === 'paid' || orderData.status === 'completed') {
       console.log(`[SenePay IPN] Commande ${orderReference} déjà marquée comme payée. Skip.`);
       return;
     }
 
-    // 3. Mise à jour Firestore
+    // 3. Mise à jour Firestore (Succès)
     await orderRef.update({
       status: 'completed',
       paymentStatus: 'paid',
