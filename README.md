@@ -71,3 +71,11 @@ Pour plus de détails sur la maintenance des clés et de la sécurité, consulte
 Ce projet est privé. Il est mis à disposition pour tous usages, y compris commerciaux.
 
 *Généré avec soin pour assurer la durabilité et la performance de la plateforme Longrich.*
+
+![alt text](longrich-home.png)
+
+![alt text](longrich-cart.png)
+
+![f](longrich-mobile.png)
+
+![alt text](image.png)
