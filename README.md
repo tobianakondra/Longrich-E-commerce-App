@@ -68,6 +68,6 @@ Pour plus de détails sur la maintenance des clés et de la sécurité, consulte
 ---
 
 ## 📝 Licence
-Ce projet est privé et destiné à l'usage exclusif de la boutique Longrich Sénégal.
+Ce projet est privé. Il est mis à disposition pour tous usages, y compris commerciaux.
 
 *Généré avec soin pour assurer la durabilité et la performance de la plateforme Longrich.*
